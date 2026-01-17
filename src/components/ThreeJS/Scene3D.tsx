@@ -45,6 +45,7 @@ const SceneContent = ({
   cameraPosition = [0, 0, 5],
 }: Omit<Scene3DProps, 'className'>) => {
   useThreeScene()
+  const isMobile = useMobile()
 
   return (
     <>
@@ -54,7 +55,7 @@ const SceneContent = ({
       <pointLight position={[10, 10, 10]} intensity={1.0} />
       {enableControls && (
         <OrbitControls
-          enableZoom={true}
+          enableZoom={!isMobile}
           enablePan={false}
           minDistance={3}
           maxDistance={10}
@@ -81,7 +82,7 @@ const Scene3D = ({
       className={`w-full h-full ${className}`} 
       style={{ 
         background: 'transparent', 
-        touchAction: isMobile ? 'pan-y' : 'auto',
+        touchAction: enableControls && isMobile ? 'none' : (isMobile ? 'pan-y' : 'auto'),
         position: 'relative',
         isolation: 'isolate'
       }}
@@ -104,7 +105,7 @@ const Scene3D = ({
         performance={{ min: 0.5, max: 1, debounce: 200 }}
         style={{ 
           background: 'transparent', 
-          touchAction: isMobile ? 'pan-y' : 'auto',
+          touchAction: enableControls && isMobile ? 'none' : (isMobile ? 'pan-y' : 'auto'),
           position: 'absolute',
           top: 0,
           left: 0,
@@ -130,7 +131,7 @@ const Scene3D = ({
       >
         <Suspense fallback={null}>
           <SceneContent 
-            enableControls={enableControls && !isMobile}
+            enableControls={enableControls}
             cameraPosition={cameraPosition}
           >
             {children}

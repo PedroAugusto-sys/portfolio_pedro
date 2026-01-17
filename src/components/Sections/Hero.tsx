@@ -166,7 +166,16 @@ const Hero = () => {
           </div>
 
           <div className="relative h-[500px] md:h-[800px] lg:h-[800px] w-full flex items-end justify-center pb-8 md:pb-12">
-            <div ref={character3DRef} className="h-full w-full max-w-2xl">
+            <div 
+              ref={character3DRef} 
+              className="h-full w-full max-w-2xl"
+              style={{ 
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
               <Suspense 
                 fallback={
                   <div className="w-full h-full bg-gray-900 rounded-lg flex items-center justify-center text-xs text-gray-400">
