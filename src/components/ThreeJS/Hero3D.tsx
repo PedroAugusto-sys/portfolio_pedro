@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { track3DInteraction } from '../../utils/analytics'
+import { preserveMaterials } from '../../utils/modelUtils'
 
 const Hero3D = () => {
   const groupRef = useRef<THREE.Group>(null)
@@ -20,8 +21,11 @@ const Hero3D = () => {
   }
 
   const { character, pc } = useMemo(() => {
-    const char = characterScene.clone()
-    const pcClone = pcScene.clone()
+    const char = characterScene.clone(true)
+    const pcClone = pcScene.clone(true)
+    
+    preserveMaterials(char)
+    preserveMaterials(pcClone)
     
     char.traverse((child) => {
       if (child instanceof THREE.Mesh) {

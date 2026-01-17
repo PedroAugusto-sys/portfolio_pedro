@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { track3DInteraction } from '../../utils/analytics'
+import { preserveMaterials } from '../../utils/modelUtils'
 
 const PC3D = () => {
   const groupRef = useRef<THREE.Group>(null)
@@ -39,7 +40,11 @@ const PC3D = () => {
     document.body.style.cursor = 'auto'
   }
 
-  const pc = pcScene.clone()
+  const pc = useMemo(() => {
+    const cloned = pcScene.clone(true)
+    preserveMaterials(cloned)
+    return cloned
+  }, [pcScene])
 
   const BASE_SCALE = 0.8
 

@@ -2,6 +2,7 @@ import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
+import { preserveMaterials } from '../../utils/modelUtils'
 
 const Achievements3D = () => {
   const groupRef = useRef<THREE.Group>(null)
@@ -10,7 +11,8 @@ const Achievements3D = () => {
   const { scene: rubiksCubeScene } = useGLTF('/models/achievements/rubiks_cube.glb')
 
   const rubiksCube = useMemo(() => {
-    const cloned = rubiksCubeScene.clone()
+    const cloned = rubiksCubeScene.clone(true)
+    preserveMaterials(cloned)
     
     cloned.traverse((child) => {
       if (child instanceof THREE.Mesh) {

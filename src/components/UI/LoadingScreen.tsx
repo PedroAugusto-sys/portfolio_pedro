@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { configureGLTFLoader } from '../../utils/textureLoader'
 
 const LoadingSphere = () => {
   return (
@@ -37,7 +37,7 @@ const LoadingScreen = ({ onLoaded }: LoadingScreenProps) => {
 
     const loadModels = async () => {
       try {
-        const loader = new GLTFLoader()
+        const loader = configureGLTFLoader()
         
         let totalLoaded = 0
         const loadPromises = CRITICAL_MODELS.map((modelPath) => {

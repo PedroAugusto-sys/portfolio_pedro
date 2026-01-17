@@ -2,6 +2,7 @@ import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
+import { preserveMaterials } from '../../utils/modelUtils'
 
 const About3D = () => {
   const groupRef = useRef<THREE.Group>(null)
@@ -20,7 +21,8 @@ const About3D = () => {
   })
 
   const { cerebro, centerOffset } = useMemo(() => {
-    const cloned = cerebroScene.clone()
+    const cloned = cerebroScene.clone(true)
+    preserveMaterials(cloned)
     
     cloned.traverse((child) => {
       if (child instanceof THREE.Mesh) {
