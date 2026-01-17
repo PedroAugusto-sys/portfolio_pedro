@@ -26,16 +26,19 @@ const ProjectCard = ({
 
   const handleGitHubClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault()
+    e.stopPropagation()
     trackProjectClick(`${title} - GitHub`)
     if (github) {
-      window.open(github, '_blank', 'noopener,noreferrer')
+      // Garante que é uma URL absoluta
+      const url = github.startsWith('http') ? github : `https://${github}`
+      window.open(url, '_blank', 'noopener,noreferrer')
     }
   }
 
   return (
-    <div className="group relative bg-gray-900 rounded-lg overflow-hidden hover:bg-gray-800 transition-all duration-300 transform hover:scale-105">
+    <div className="group relative bg-gray-900 rounded-lg overflow-hidden hover:bg-gray-800 transition-all duration-300 transform hover:scale-105 flex flex-col w-full">
       {/* Imagem do projeto ou placeholder */}
-      <div className="aspect-video bg-gradient-to-br from-gray-800 via-gray-800/90 to-gray-900 relative overflow-hidden">
+      <div className="aspect-video bg-gradient-to-br from-gray-800 via-gray-800/90 to-gray-900 relative overflow-hidden flex-shrink-0">
         {image ? (
           <img
             src={image}
@@ -67,10 +70,10 @@ const ProjectCard = ({
         {/* Overlay sutil para melhor contraste */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-900/20 pointer-events-none" />
       </div>
-      <div className="p-6">
+      <div className="p-6 flex flex-col flex-grow">
         <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-        <p className="text-gray-400 mb-4">{description}</p>
-        <div className="flex flex-wrap gap-2 mb-4">
+        <p className="text-gray-400 mb-4 flex-grow">{description}</p>
+        <div className="flex flex-wrap gap-2 mb-4 flex-shrink-0">
           {technologies.map((tech) => (
             <span
               key={tech}
@@ -80,7 +83,7 @@ const ProjectCard = ({
             </span>
           ))}
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-shrink-0 mt-auto">
           {link && (
             <button
               onClick={handleClick}
@@ -91,7 +94,7 @@ const ProjectCard = ({
           )}
           {github && (
             <a
-              href={github}
+              href={github.startsWith('http') ? github : `https://${github}`}
               onClick={handleGitHubClick}
               target="_blank"
               rel="noopener noreferrer"
