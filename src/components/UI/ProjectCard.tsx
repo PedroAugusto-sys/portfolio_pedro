@@ -24,6 +24,14 @@ const ProjectCard = ({
     }
   }
 
+  const handleGitHubClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+    trackProjectClick(`${title} - GitHub`)
+    if (github) {
+      window.open(github, '_blank', 'noopener,noreferrer')
+    }
+  }
+
   return (
     <div className="group relative bg-gray-900 rounded-lg overflow-hidden hover:bg-gray-800 transition-all duration-300 transform hover:scale-105">
       {/* Imagem do projeto ou placeholder */}
@@ -84,9 +92,10 @@ const ProjectCard = ({
           {github && (
             <a
               href={github}
+              onClick={handleGitHubClick}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white font-medium text-sm"
+              className="text-gray-400 hover:text-white font-medium text-sm cursor-pointer"
             >
               GitHub
             </a>
