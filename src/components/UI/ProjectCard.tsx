@@ -17,19 +17,23 @@ const ProjectCard = ({
   link,
   github,
 }: ProjectCardProps) => {
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     trackProjectClick(title)
-    if (link) {
-      window.open(link, '_blank', 'noopener,noreferrer')
+    if (link && link !== '#') {
+      // Garante que é uma URL absoluta e abre em nova aba
+      const url = link.startsWith('http') ? link : `https://${link}`
+      window.open(url, '_blank', 'noopener,noreferrer')
     }
   }
 
-  const handleGitHubClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleGitHubClick = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     trackProjectClick(`${title} - GitHub`)
     if (github) {
-      // Garante que é uma URL absoluta
+      // Garante que é uma URL absoluta e abre em nova aba
       const url = github.startsWith('http') ? github : `https://${github}`
       window.open(url, '_blank', 'noopener,noreferrer')
     }
@@ -87,21 +91,20 @@ const ProjectCard = ({
           {link && (
             <button
               onClick={handleClick}
-              className="text-primary-400 hover:text-primary-300 font-medium text-sm"
+              className="text-primary-400 hover:text-primary-300 font-medium text-sm cursor-pointer bg-transparent border-none p-0 appearance-none"
+              aria-label={`Ver projeto ${title}`}
             >
               Ver Projeto →
             </button>
           )}
           {github && (
-            <a
-              href={github.startsWith('http') ? github : `https://${github}`}
+            <button
               onClick={handleGitHubClick}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white font-medium text-sm cursor-pointer"
+              className="text-gray-400 hover:text-white font-medium text-sm cursor-pointer bg-transparent border-none p-0 appearance-none"
+              aria-label={`Ver repositório do ${title} no GitHub`}
             >
               GitHub
-            </a>
+            </button>
           )}
         </div>
       </div>
