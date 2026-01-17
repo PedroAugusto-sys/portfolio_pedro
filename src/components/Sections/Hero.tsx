@@ -14,11 +14,9 @@ const Hero = () => {
   const character3DRef = useRef<HTMLDivElement>(null)
   const { scrollTo } = useSmoothScroll()
   
-  // Animação de digitação para "Olá, eu sou o"
   const [greeting, setGreeting] = useState('')
   const [showNameAnimation, setShowNameAnimation] = useState(false)
   
-  // Animação de digitação para o nome (só inicia depois que o greeting terminar)
   const typedName = useTypingAnimation({
     texts: ['Predo', 'Pedro'],
     typingSpeed: 150,
@@ -27,7 +25,6 @@ const Hero = () => {
     repeat: true,
   })
 
-  // Efeito para digitar "Olá, eu sou o"
   useEffect(() => {
     const greetingText = 'Olá, eu sou o '
     let currentIndex = 0
@@ -169,7 +166,7 @@ const Hero = () => {
           </div>
 
           <div className="relative h-[500px] md:h-[800px] lg:h-[800px] w-full flex items-end justify-center pb-8 md:pb-12">
-            <div ref={character3DRef} className="h-full w-full max-w-md">
+            <div ref={character3DRef} className="h-full w-full max-w-2xl">
               <Suspense 
                 fallback={
                   <div className="w-full h-full bg-gray-900 rounded-lg flex items-center justify-center text-xs text-gray-400">

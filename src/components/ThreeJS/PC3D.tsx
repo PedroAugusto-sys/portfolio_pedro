@@ -12,12 +12,10 @@ const PC3D = () => {
 
   useFrame((state) => {
     if (groupRef.current && pcRef.current) {
-      // Rotação suave baseada no tempo (mais lenta quando interativo)
       if (!hovered) {
         groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.4) * 0.15
       }
       
-      // Efeito de hover - escala ligeiramente maior
       if (hovered) {
         pcRef.current.scale.lerp(new THREE.Vector3(1.1, 1.1, 1.1), 0.1)
       } else {
@@ -41,15 +39,12 @@ const PC3D = () => {
     document.body.style.cursor = 'auto'
   }
 
-  // Clonar a cena para evitar problemas de reutilização
   const pc = pcScene.clone()
 
-  // Escala padrão para padronizar tamanhos
   const BASE_SCALE = 0.8
 
   return (
     <group ref={groupRef}>
-      {/* PC - Interativo */}
       <group 
         ref={pcRef}
         position={[0, 0, 0]} 

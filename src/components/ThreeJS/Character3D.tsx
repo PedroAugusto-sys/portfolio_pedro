@@ -9,11 +9,9 @@ const Character3D = () => {
   const innerGroupRef = useRef<THREE.Group>(null)
   const { scene: characterScene } = useGLTF('/models/hero/character.glb')
 
-  // Clonar e otimizar o modelo
   const character = useMemo(() => {
     const cloned = characterScene.clone()
     
-    // Otimizar geometria
     cloned.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.frustumCulled = true
@@ -33,12 +31,10 @@ const Character3D = () => {
     return cloned
   }, [characterScene])
 
-  // Calcular bounding box para centralizar o modelo
   const centerOffset = useMemo(() => {
     try {
       const box = new THREE.Box3().setFromObject(character)
       const center = box.getCenter(new THREE.Vector3())
-      // Retornar offset negativo para centralizar
       return new THREE.Vector3(-center.x, -center.y, -center.z)
     } catch (error) {
       console.warn('Erro ao calcular bounding box:', error)
@@ -46,15 +42,12 @@ const Character3D = () => {
     }
   }, [character])
 
-  // Animação de rotação e flutuação
   useFrame((state) => {
     if (groupRef.current) {
-      // Rotação suave no eixo Y
       groupRef.current.rotation.y = state.clock.elapsedTime * 0.5
     }
     
     if (innerGroupRef.current) {
-      // Flutuação vertical suave
       const floatY = Math.sin(state.clock.elapsedTime * 1.2) * 0.3
       innerGroupRef.current.position.y = centerOffset.y + floatY
     }
@@ -64,7 +57,6 @@ const Character3D = () => {
     track3DInteraction('click', 'hero_character')
   }
 
-  // Escala base padronizada
   const BASE_SCALE = 1.2
 
   return (
@@ -80,7 +72,6 @@ const Character3D = () => {
   )
 }
 
-// Pré-carregar o modelo
 useGLTF.preload('/models/hero/character.glb')
 
 export default Character3D

@@ -6,7 +6,6 @@ gsap.registerPlugin(ScrollTrigger)
 
 ScrollTrigger.config({
   autoRefreshEvents: 'visibilitychange,DOMContentLoaded,load',
-  refreshPriority: -1,
   ignoreMobileResize: true,
 })
 
@@ -19,24 +18,22 @@ export const useGSAP = () => {
     element: gsap.TweenTarget,
     options?: gsap.TweenVars
   ) => {
-    // Verificar se já existe animação para este elemento
     if (animationsRef.current.has(element)) {
       return animationsRef.current.get(element)!
     }
 
     const scrollTriggerConfig: ScrollTrigger.Vars = {
       trigger: element as gsap.DOMTarget,
-      start: 'top 80%',
+      start: 'top 90%',
       toggleActions: 'play none none none',
       once: true,
-      refreshPriority: -1,
       invalidateOnRefresh: false,
     }
 
     const animation = gsap.from(element, {
       opacity: 0,
       y: 50,
-      duration: 1,
+      duration: 0.5,
       ease: 'power3.out',
       immediateRender: false,
       onComplete: () => {
@@ -65,10 +62,9 @@ export const useGSAP = () => {
 
     const scrollTriggerConfig: ScrollTrigger.Vars = {
       trigger: element as gsap.DOMTarget,
-      start: 'top 80%',
+      start: 'top 90%',
       toggleActions: 'play none none none',
       once: true,
-      refreshPriority: -1,
       invalidateOnRefresh: false,
       ...scrollOptions,
     }
@@ -95,7 +91,7 @@ export const useGSAP = () => {
   useEffect(() => {
     ScrollTrigger.refresh()
     
-    let refreshTimeout: NodeJS.Timeout | null = null
+    let refreshTimeout: ReturnType<typeof setTimeout> | null = null
     const handleResize = () => {
       if (refreshTimeout) {
         clearTimeout(refreshTimeout)

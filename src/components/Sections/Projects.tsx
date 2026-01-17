@@ -8,7 +8,6 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 gsap.registerPlugin(ScrollTrigger)
 
-// Dados de exemplo - substituir com projetos reais
 const projects = [
   {
     id: 1,
@@ -68,7 +67,7 @@ const projects = [
     technologies: ['Selenium', 'Playwright', 'Python', 'Java', 'Test Automation', 'CI/CD'],
     link: '#',
     github: 'https://github.com/PedroAugusto-sys/qa_automacao',
-    image: undefined, // Adicione a imagem aqui quando disponível
+    image: '/images/gears.jpeg',
   },
   {
     id: 7,
@@ -105,8 +104,8 @@ const projects = [
 const Projects = () => {
   const { elementRef, hasIntersected } = useIntersectionObserver({ 
     threshold: 0.2,
-    rootMargin: '200px', // Pré-carregar quando estiver a 200px da viewport
-    persist: true // Manter estado após primeira interseção
+    rootMargin: '200px',
+    persist: true
   })
   const { animateIn } = useGSAP()
   const animationsCreatedRef = useRef(false)
@@ -118,41 +117,37 @@ const Projects = () => {
   }, [hasIntersected])
 
   useEffect(() => {
-    // Garantir que animações sejam criadas apenas uma vez
     if (hasIntersected && elementRef.current && !animationsCreatedRef.current) {
-      // Animar título da seção
       const titleSection = elementRef.current.querySelector('h2')?.parentElement
       if (titleSection) {
         gsap.set(titleSection, { opacity: 0, y: 30 })
         gsap.to(titleSection, {
           opacity: 1,
           y: 0,
-          duration: 0.8,
+          duration: 0.4,
           ease: 'power3.out',
           scrollTrigger: {
             trigger: titleSection,
-            start: 'top 85%',
+            start: 'top 90%',
             toggleActions: 'play none none none',
             once: true,
           },
         })
       }
 
-      // Animar cards de projeto
       const cards = elementRef.current.querySelectorAll('.project-card')
       cards.forEach((card, index) => {
-        // Garantir que elementos tenham estado inicial correto
         gsap.set(card, { opacity: 0, y: 50, scale: 0.95 })
         gsap.to(card, {
           opacity: 1,
           y: 0,
           scale: 1,
-          duration: 0.9,
-          delay: 0.3 + index * 0.1,
+          duration: 0.5,
+          delay: 0.1 + index * 0.05,
           ease: 'power3.out',
           scrollTrigger: {
             trigger: card,
-            start: 'top 80%',
+            start: 'top 90%',
             toggleActions: 'play none none none',
             once: true,
           },
@@ -169,7 +164,6 @@ const Projects = () => {
       className="relative min-h-screen py-20 px-4 sm:px-6 lg:px-8"
     >
       <div className="max-w-7xl mx-auto">
-        {/* Título */}
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
             Meus <span className="text-primary-400">Projetos</span>
@@ -179,9 +173,8 @@ const Projects = () => {
           </p>
         </div>
 
-        {/* Grid de Projetos */}
         <div className="grid md:grid-cols-2 gap-8 mb-16">
-          {projects.map((project, index) => (
+          {projects.map((project) => (
             <div key={project.id} className="project-card">
               <ProjectCard
                 title={project.title}

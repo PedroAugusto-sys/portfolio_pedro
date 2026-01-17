@@ -1,4 +1,4 @@
-import { useEffect, Suspense, useRef } from 'react'
+import { useEffect, Suspense, useRef, useState } from 'react'
 import Scene3D from '../ThreeJS/Scene3D'
 import Achievements3D from '../ThreeJS/Achievements3D'
 import { useGSAP } from '../../hooks/useGSAP'
@@ -17,6 +17,8 @@ const Achievements = () => {
   })
   const { animateIn } = useGSAP()
   const animationsCreatedRef = useRef(false)
+  const statsRefs = useRef<(HTMLDivElement | null)[]>([])
+  const [displayValues, setDisplayValues] = useState<number[]>([0, 0, 0])
 
   useEffect(() => {
     if (hasIntersected) {
@@ -25,79 +27,110 @@ const Achievements = () => {
   }, [hasIntersected])
 
   useEffect(() => {
-    // Garantir que animações sejam criadas apenas uma vez
     if (hasIntersected && elementRef.current && !animationsCreatedRef.current) {
-      // Animar título da seção
       const titleSection = elementRef.current.querySelector('h2')?.parentElement
       if (titleSection) {
         gsap.set(titleSection, { opacity: 0, y: 30 })
         gsap.to(titleSection, {
           opacity: 1,
           y: 0,
-          duration: 0.8,
+          duration: 0.4,
           ease: 'power3.out',
           scrollTrigger: {
             trigger: titleSection,
-            start: 'top 85%',
+            start: 'top 90%',
             toggleActions: 'play none none none',
             once: true,
           },
         })
       }
 
-      // Animar estatísticas com efeito de contagem
-      const stats = elementRef.current.querySelectorAll('[class*="bg-gray-900"]')
-      stats.forEach((stat, index) => {
-        gsap.set(stat, { opacity: 0, y: 30, scale: 0.9 })
-        gsap.to(stat, {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          duration: 0.7,
-          delay: 0.2 + index * 0.1,
-          ease: 'back.out(1.2)',
-          scrollTrigger: {
-            trigger: stat,
-            start: 'top 85%',
-            toggleActions: 'play none none none',
-            once: true,
-          },
+      const statsData = [
+        { label: 'Projetos Completos', value: '10+' },
+        { label: 'Tecnologias Dominadas', value: '15+' },
+        { label: 'Anos de Experiência', value: '3+' },
+      ]
+      
+      const setupStatsAnimation = () => {
+        const validStatsRefs = statsRefs.current.filter(ref => ref !== null)
+        
+        if (validStatsRefs.length !== statsData.length) {
+          setTimeout(setupStatsAnimation, 50)
+          return
+        }
+        
+        statsRefs.current.forEach((statElement, index) => {
+          if (!statElement || !statsData[index]) return
+          
+          gsap.set(statElement, { opacity: 0, y: 30, scale: 0.9 })
+          
+          const targetValue = statsData[index].value
+          const numValue = parseInt(targetValue.replace(/\D/g, ''))
+          
+          gsap.to(statElement, {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.4,
+            delay: 0.05 + index * 0.05,
+            ease: 'back.out(1.2)',
+            scrollTrigger: {
+              trigger: statElement,
+              start: 'top 90%',
+              toggleActions: 'play none none none',
+              once: true,
+              onEnter: () => {
+                const obj = { value: 0 }
+                gsap.to(obj, {
+                  value: numValue,
+                  duration: 2,
+                  ease: 'power2.out',
+                  onUpdate: () => {
+                    setDisplayValues((prev) => {
+                      const newValues = [...prev]
+                      newValues[index] = Math.floor(obj.value)
+                      return newValues
+                    })
+                  }
+                })
+              }
+            },
+          })
         })
-      })
+      }
+      
+      setupStatsAnimation()
 
-      // Animar elementos de timeline
       const elements = elementRef.current.querySelectorAll('.animate-on-scroll')
       elements.forEach((el, index) => {
-        // Garantir que elementos tenham estado inicial correto
         gsap.set(el, { opacity: 0, x: -30 })
         gsap.to(el, {
           opacity: 1,
           x: 0,
-          duration: 0.8,
-          delay: 0.5 + index * 0.15,
+          duration: 0.4,
+          delay: 0.1 + index * 0.08,
           ease: 'power3.out',
           scrollTrigger: {
             trigger: el,
-            start: 'top 80%',
+            start: 'top 90%',
             toggleActions: 'play none none none',
             once: true,
           },
         })
       })
 
-      // Animar elemento 3D
       const threeDElement = elementRef.current.querySelector('[class*="h-64"], [class*="h-96"]')
       if (threeDElement) {
         gsap.set(threeDElement, { opacity: 0, scale: 0.9 })
         gsap.to(threeDElement, {
           opacity: 1,
           scale: 1,
-          duration: 1.2,
-          delay: 0.8,
+          duration: 0.5,
+          delay: 0.2,
           ease: 'power3.out',
           scrollTrigger: {
             trigger: threeDElement,
-            start: 'top 80%',
+            start: 'top 90%',
             toggleActions: 'play none none none',
             once: true,
           },
@@ -108,7 +141,6 @@ const Achievements = () => {
     }
   }, [hasIntersected, animateIn, elementRef])
 
-  // Dados de conquistas
   const achievements = [
     {
       id: 1,
@@ -134,7 +166,6 @@ const Achievements = () => {
     { label: 'Projetos Completos', value: '10+' },
     { label: 'Tecnologias Dominadas', value: '15+' },
     { label: 'Anos de Experiência', value: '3+' },
-    { label: 'Clientes Satisfeitos', value: '20+' },
   ]
 
   return (
@@ -154,28 +185,32 @@ const Achievements = () => {
           </p>
         </div>
 
-        {/* Estatísticas */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-          {stats.map((stat, index) => (
-            <div
-              key={index}
-              className="bg-gray-900 rounded-lg p-6 text-center animate-on-scroll 
-                         transition-all duration-300 ease-out
-                         hover:scale-105 hover:bg-gray-800 hover:shadow-lg hover:shadow-primary-500/20
-                         cursor-pointer group"
-            >
-              <div className="text-3xl md:text-4xl font-bold text-primary-400 mb-2
-                            transition-all duration-300 
-                            group-hover:text-primary-300 group-hover:scale-110">
-                {stat.value}
+        <div className="flex justify-center mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl">
+            {stats.map((stat, index) => (
+              <div
+                key={index}
+                ref={(el) => {
+                  statsRefs.current[index] = el
+                }}
+                className="bg-gray-900 rounded-lg p-6 text-center animate-on-scroll 
+                           transition-all duration-300 ease-out
+                           hover:scale-105 hover:bg-gray-800 hover:shadow-lg hover:shadow-primary-500/20
+                           cursor-pointer group"
+              >
+                <div className="text-3xl md:text-4xl font-bold text-primary-400 mb-2
+                              transition-all duration-300 
+                              group-hover:text-primary-300 group-hover:scale-110">
+                  {displayValues[index]}{stat.value.replace(/\d+/g, '')}
+                </div>
+                <div className="text-gray-400 text-sm md:text-base
+                              transition-colors duration-300 
+                              group-hover:text-gray-300">
+                  {stat.label}
+                </div>
               </div>
-              <div className="text-gray-400 text-sm md:text-base
-                            transition-colors duration-300 
-                            group-hover:text-gray-300">
-                {stat.label}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* Timeline de Conquistas */}

@@ -20,7 +20,6 @@ export const useIntersectionObserver = (
     const element = elementRef.current
     if (!element) return
 
-    // Limpar observer anterior se existir
     if (observerRef.current) {
       observerRef.current.disconnect()
     }
@@ -29,12 +28,10 @@ export const useIntersectionObserver = (
       ([entry]) => {
         setIsIntersecting(entry.isIntersecting)
         
-        // Marcar como intersectado na primeira vez que entra na viewport
         if (entry.isIntersecting && !hasIntersectedRef.current) {
           hasIntersectedRef.current = true
           setHasIntersected(true)
           
-          // Se persist for false, desconectar após primeira interseção para performance
           if (!options.persist && observerRef.current) {
             observerRef.current.disconnect()
           }

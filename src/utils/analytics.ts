@@ -19,7 +19,6 @@ export const trackEvent = (
     })
   }
 
-  // Também enviar para dataLayer do GTM
   if (typeof window !== 'undefined' && window.dataLayer) {
     window.dataLayer.push({
       event: action,

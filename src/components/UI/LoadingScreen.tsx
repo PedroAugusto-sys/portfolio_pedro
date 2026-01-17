@@ -21,7 +21,6 @@ interface LoadingScreenProps {
   onLoaded: () => void
 }
 
-// Modelos críticos que devem ser carregados antes de mostrar a página
 const CRITICAL_MODELS = [
   '/models/hero/character.glb',
   '/models/hero/a_pc_playing_btf4.glb',
@@ -34,14 +33,12 @@ const LoadingScreen = ({ onLoaded }: LoadingScreenProps) => {
   useEffect(() => {
     let isMounted = true
     const startTime = Date.now()
-    const MIN_LOADING_TIME = 3000 // Tempo mínimo de 3 segundos para garantir inicialização completa
+    const MIN_LOADING_TIME = 3000
 
-    // Carregar modelos críticos
     const loadModels = async () => {
       try {
         const loader = new GLTFLoader()
         
-        // Carregar modelos em paralelo para melhor performance
         let totalLoaded = 0
         const loadPromises = CRITICAL_MODELS.map((modelPath) => {
           return new Promise<void>((resolve) => {
@@ -50,20 +47,20 @@ const LoadingScreen = ({ onLoaded }: LoadingScreenProps) => {
               () => {
                 if (isMounted) {
                   totalLoaded++
-                  const newProgress = Math.floor((totalLoaded / CRITICAL_MODELS.length) * 90) // 90% para modelos
+                  const newProgress = Math.floor((totalLoaded / CRITICAL_MODELS.length) * 90)
                   setLoadedModels(totalLoaded)
                   setProgress(newProgress)
                 }
                 resolve()
               },
-              undefined, // Não usar progress callback para simplificar
+              undefined,
               (error) => {
                 console.warn(`Erro ao carregar modelo ${modelPath}:`, error)
                 if (isMounted) {
                   totalLoaded++
                   setLoadedModels(totalLoaded)
                 }
-                resolve() // Continuar mesmo com erro
+                resolve()
               }
             )
           })
@@ -71,20 +68,15 @@ const LoadingScreen = ({ onLoaded }: LoadingScreenProps) => {
 
         await Promise.all(loadPromises)
 
-        // Completar carregamento
         if (isMounted) {
           setProgress(100)
           
-          // Calcular tempo restante para garantir tempo mínimo de loading
           const elapsedTime = Date.now() - startTime
           const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsedTime)
-          const finalDelay = remainingTime + 2000 // Adiciona 2 segundos extras após o tempo mínimo
+          const finalDelay = remainingTime + 2000
           
-          // Delay aumentado para garantir que tudo está totalmente pronto antes de permitir interação
-          // Adicionar delay extra para garantir que o Canvas seja completamente desmontado
           setTimeout(() => {
             if (isMounted) {
-              // Pequeno delay adicional para garantir desmontagem completa do Canvas
               setTimeout(() => {
                 if (isMounted) {
                   onLoaded()
@@ -95,7 +87,6 @@ const LoadingScreen = ({ onLoaded }: LoadingScreenProps) => {
         }
       } catch (error) {
         console.error('Erro ao carregar modelos:', error)
-        // Mesmo com erro, garantir tempo mínimo de loading
         if (isMounted) {
           setProgress(100)
           const elapsedTime = Date.now() - startTime
@@ -104,7 +95,6 @@ const LoadingScreen = ({ onLoaded }: LoadingScreenProps) => {
           
           setTimeout(() => {
             if (isMounted) {
-              // Pequeno delay adicional para garantir desmontagem completa do Canvas
               setTimeout(() => {
                 if (isMounted) {
                   onLoaded()

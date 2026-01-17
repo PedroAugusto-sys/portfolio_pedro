@@ -20,10 +20,8 @@ const FloatingObject = ({
 
   useFrame((state) => {
     if (meshRef.current) {
-      // Flutuação vertical
       meshRef.current.position.y =
         initialY + Math.sin(state.clock.elapsedTime * speed) * 0.3
-      // Rotação
       meshRef.current.rotation.x += 0.01 * speed
       meshRef.current.rotation.y += 0.01 * speed
     }

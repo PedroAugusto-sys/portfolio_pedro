@@ -30,11 +30,9 @@ const Model3D = ({
   const groupRef = useRef<THREE.Group>(null)
   const initialY = position[1]
 
-  // Clonar a cena apenas uma vez usando useMemo
   const clonedScene = useMemo(() => {
     const cloned = scene.clone()
     
-    // Otimizar geometria
     cloned.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.frustumCulled = true
@@ -50,7 +48,6 @@ const Model3D = ({
   useFrame((state) => {
     if (groupRef.current) {
       if (autoRotate) {
-        // Rotação baseada em tempo (mais suave e precisa)
         groupRef.current.rotation.y = state.clock.elapsedTime * rotationSpeed
       }
       

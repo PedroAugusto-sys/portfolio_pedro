@@ -28,7 +28,6 @@ export const updateMetaTags = (data: {
 }
 
 const updateMetaTag = (property: string, content: string) => {
-  // Atualizar ou criar meta tag
   let element = document.querySelector(`meta[property="${property}"]`) ||
                 document.querySelector(`meta[name="${property}"]`)
 
@@ -58,6 +57,6 @@ export const generateStructuredData = (data: {
     description: data.description,
     url: data.url,
     image: data.image,
-    sameAs: [], // Adicionar links de redes sociais aqui
+    sameAs: [],
   }
 }

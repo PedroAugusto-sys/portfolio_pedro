@@ -38,7 +38,6 @@ export const useTypingAnimation = ({
           setDisplayText(currentText.substring(0, displayText.length - 1))
         } else {
           setIsDeleting(false)
-          // Move para o próximo texto ou volta ao primeiro se repeat
           if (currentTextIndex < texts.length - 1) {
             setCurrentTextIndex(currentTextIndex + 1)
           } else if (repeat) {
@@ -49,7 +48,6 @@ export const useTypingAnimation = ({
         if (displayText.length < currentText.length) {
           setDisplayText(currentText.substring(0, displayText.length + 1))
         } else {
-          // Texto completo, pausa antes de apagar
           setIsPaused(true)
         }
       }

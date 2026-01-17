@@ -11,12 +11,10 @@ const Projects3D = () => {
 
   useFrame((state) => {
     if (groupRef.current) {
-      // Rotação suave baseada em tempo
       groupRef.current.rotation.y = state.clock.elapsedTime * 0.4
     }
   })
 
-  // Clonar as cenas apenas uma vez usando useMemo
   const { smartphone, internet, rubiksCube } = useMemo(() => {
     const optimizeGeometry = (scene: THREE.Object3D) => {
       scene.traverse((child) => {
@@ -40,17 +38,14 @@ const Projects3D = () => {
     return { smartphone: smart, internet: inter, rubiksCube: cube }
   }, [smartphoneScene, internetScene, rubiksCubeScene])
 
-  // Escala padrão para padronizar tamanhos
   const BASE_SCALE = 0.8
 
   return (
     <group ref={groupRef}>
-      {/* Cubo mágico centralizado (desafios) */}
       <group position={[0, 0, 0]} scale={[BASE_SCALE * 1.2, BASE_SCALE * 1.2, BASE_SCALE * 1.2]}>
         <primitive object={rubiksCube} />
       </group>
 
-      {/* Smartphone à esquerda (apps mobile) */}
       <group
         position={[-4, 0, -1]}
         rotation={[0, Math.PI / 3, 0]}
@@ -59,7 +54,6 @@ const Projects3D = () => {
         <primitive object={smartphone} />
       </group>
 
-      {/* Internet à direita (projetos web) */}
       <group
         position={[4, 0, -1]}
         rotation={[0, -Math.PI / 3, 0]}

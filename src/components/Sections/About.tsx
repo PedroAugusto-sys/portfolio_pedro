@@ -29,47 +29,47 @@ const About = () => {
       gsap.to(contentRef.current, {
         opacity: 1,
         y: 0,
-        duration: 0.8,
+        duration: 0.4,
         ease: 'power2.out',
         scrollTrigger: {
           trigger: contentRef.current,
-          start: 'top 85%',
+          start: 'top 90%',
           toggleActions: 'play none none none',
           once: true,
         },
       })
 
-      const elements = elementRef.current.querySelectorAll('.animate-on-scroll')
+      const elements = elementRef.current?.querySelectorAll('.animate-on-scroll') || []
       
       elements.forEach((el, index) => {
         gsap.set(el, { opacity: 0, y: 40 })
         gsap.to(el, {
           opacity: 1,
           y: 0,
-          duration: 0.8,
-          delay: 0.2 + index * 0.1,
+          duration: 0.4,
+          delay: 0.1 + index * 0.05,
           ease: 'power2.out',
           scrollTrigger: {
             trigger: el,
-            start: 'top 85%',
+            start: 'top 90%',
             toggleActions: 'play none none none',
             once: true,
           },
         })
       })
 
-      const threeDElements = elementRef.current.querySelectorAll('[class*="h-[600px]"], [class*="h-[700px]"], [class*="h-[800px]"], [class*="h-[900px]"], [class*="h-[1000px]"], [class*="h-[1100px]"]')
+      const threeDElements = elementRef.current?.querySelectorAll('[class*="h-[600px]"], [class*="h-[700px]"], [class*="h-[800px]"], [class*="h-[900px]"], [class*="h-[1000px]"], [class*="h-[1100px]"]') || []
       threeDElements.forEach((el, index) => {
         gsap.set(el, { opacity: 0, scale: 0.95 })
         gsap.to(el, {
           opacity: 1,
           scale: 1,
-          duration: 1.0,
-          delay: 0.3 + elements.length * 0.1 + index * 0.15,
+          duration: 0.5,
+          delay: 0.15 + index * 0.08,
           ease: 'power2.out',
           scrollTrigger: {
             trigger: el,
-            start: 'top 85%',
+            start: 'top 90%',
             toggleActions: 'play none none none',
             once: true,
           },
@@ -81,7 +81,6 @@ const About = () => {
   }, [hasIntersected, elementRef])
 
   const skills = [
-    // Linguagens de Programação
     'Java',
     'Python',
     'C#',
@@ -89,7 +88,6 @@ const About = () => {
     'JavaScript',
     'HTML',
     'SCSS',
-    // Frameworks e Bibliotecas
     'React',
     'React.js',
     'Three.js',
@@ -106,13 +104,10 @@ const About = () => {
     'Streamlit',
     'JPA/Hibernate',
     'ElectronJS',
-    // Banco de Dados
     'PostgreSQL',
     'MongoDB',
-    // Data Science
     'Pandas',
     'Big Data',
-    // Ferramentas e Plataformas
     'Git',
     'GitHub',
     'Jira',

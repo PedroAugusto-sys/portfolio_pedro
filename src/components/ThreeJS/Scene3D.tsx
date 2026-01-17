@@ -11,8 +11,6 @@ interface Scene3DProps {
   className?: string
 }
 
-
-// Componente para gerenciar recuperação de contexto WebGL
 const WebGLContextManager = () => {
   const { gl } = useThree()
   
@@ -26,7 +24,6 @@ const WebGLContextManager = () => {
     
     const handleContextRestored = () => {
       console.log('✅ WebGL Context Restored - recarregando página...')
-      // Recarregar a página para garantir estado limpo
       setTimeout(() => window.location.reload(), 100)
     }
     
@@ -80,48 +77,36 @@ const Scene3D = ({
     <div className={`w-full h-full ${className}`} style={{ background: 'transparent' }}>
       <Canvas
         gl={{ 
-          antialias: false, // Desabilitado para reduzir uso de memória e evitar context lost
+          antialias: false,
           alpha: true,
           powerPreference: 'high-performance',
           stencil: false,
           depth: true,
           logarithmicDepthBuffer: false,
           preserveDrawingBuffer: false,
-          // Configurações para evitar perda de contexto
           failIfMajorPerformanceCaveat: false,
-          // Limitar uso de memória
           precision: 'highp',
-          // Reduzir uso de recursos
           premultipliedAlpha: false,
         }}
-        dpr={[1, 1]} // DPR fixo em 1 para reduzir uso de memória drasticamente
+        dpr={[1, 1]}
         camera={{ position: cameraPosition }}
         performance={{ min: 0.5, max: 1, debounce: 200 }}
         style={{ background: 'transparent' }}
         frameloop="always"
         onCreated={({ gl, scene }) => {
           try {
-            // Configurar o renderer
-            // Não tentar acessar o contexto diretamente pois o Canvas já criou um
-            // O WebGLContextManager cuida do monitoramento do contexto
             gl.setClearColor('#000000', 0)
             gl.shadowMap.enabled = false
-            // Limitar pixel ratio para evitar sobrecarga e perda de contexto
-            // DPR fixo em 1 para máxima compatibilidade e menor uso de memória
             gl.setPixelRatio(1)
             gl.outputColorSpace = 'srgb'
-            // Otimizações de performance para reduzir uso de memória
             gl.sortObjects = false
             scene.frustumCulled = true
           } catch (error) {
             console.error('Erro ao configurar WebGL:', error)
-            // Não lançar o erro para evitar loop infinito de re-renderização
-            // O WebGLContextManager vai lidar com a recuperação
           }
         }}
         onError={(error) => {
           console.error('❌ Erro no Canvas:', error)
-          // Não fazer reload automático aqui, deixar o WebGLContextManager lidar
         }}
       >
         <Suspense fallback={null}>

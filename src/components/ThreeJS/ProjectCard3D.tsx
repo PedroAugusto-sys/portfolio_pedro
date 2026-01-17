@@ -17,20 +17,15 @@ const ProjectCard3D = ({ modelPath, modelIndex }: ProjectCard3DProps) => {
 
   useFrame((state) => {
     if (groupRef.current && modelRef.current) {
-      // Rotação suave contínua
       groupRef.current.rotation.y += 0.01
       
-      // Movimento flutuante vertical
       const floatOffset = Math.sin(state.clock.elapsedTime * 1.5 + modelIndex) * 0.3
       modelRef.current.position.y = floatOffset
       
-      // Rotação adicional no hover
       if (hovered) {
         modelRef.current.rotation.y += 0.05
-        // Transição suave de escala
         modelRef.current.scale.lerp(new THREE.Vector3(1.2, 1.2, 1.2), 0.1)
       } else {
-        // Voltar ao tamanho normal suavemente
         modelRef.current.scale.lerp(new THREE.Vector3(1.0, 1.0, 1.0), 0.1)
       }
     }
@@ -49,12 +44,8 @@ const ProjectCard3D = ({ modelPath, modelIndex }: ProjectCard3DProps) => {
     setHovered(false)
   }
 
-  // Clonar a cena para evitar problemas de reutilização
   const clonedScene = scene.clone()
 
-  // Escala padrão ajustada para cards menores
-  // Aumentar escala para smartphone (todos os smartphones)
-  // Ajustar escala para estrela
   const isSmartphone = modelPath.includes('smartphone')
   const isStar = modelPath.includes('star')
   const BASE_SCALE = isSmartphone ? 2.5 : isStar ? 1.2 : 0.5
