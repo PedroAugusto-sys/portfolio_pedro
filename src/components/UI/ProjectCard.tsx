@@ -1,5 +1,3 @@
-import { trackProjectClick } from '../../utils/analytics'
-
 interface ProjectCardProps {
   title: string
   description: string
@@ -17,28 +15,6 @@ const ProjectCard = ({
   link,
   github,
 }: ProjectCardProps) => {
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    trackProjectClick(title)
-    if (link && link !== '#') {
-      // Garante que é uma URL absoluta e abre em nova aba
-      const url = link.startsWith('http') ? link : `https://${link}`
-      window.open(url, '_blank', 'noopener,noreferrer')
-    }
-  }
-
-  const handleGitHubClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    trackProjectClick(`${title} - GitHub`)
-    if (github) {
-      // Garante que é uma URL absoluta e abre em nova aba
-      const url = github.startsWith('http') ? github : `https://${github}`
-      window.open(url, '_blank', 'noopener,noreferrer')
-    }
-  }
-
   return (
     <div className="group relative bg-gray-900 rounded-lg overflow-hidden hover:bg-gray-800 transition-all duration-300 transform hover:scale-105 flex flex-col w-full">
       {/* Imagem do projeto ou placeholder */}
@@ -87,26 +63,21 @@ const ProjectCard = ({
             </span>
           ))}
         </div>
-        <div className="flex gap-4 flex-shrink-0 mt-auto">
-          {link && (
-            <button
-              onClick={handleClick}
-              className="text-primary-400 hover:text-primary-300 font-medium text-sm cursor-pointer bg-transparent border-none p-0 appearance-none"
-              aria-label={`Ver projeto ${title}`}
-            >
-              Ver Projeto →
-            </button>
-          )}
-          {github && (
-            <button
-              onClick={handleGitHubClick}
-              className="text-gray-400 hover:text-white font-medium text-sm cursor-pointer bg-transparent border-none p-0 appearance-none"
-              aria-label={`Ver repositório do ${title} no GitHub`}
-            >
-              GitHub
-            </button>
-          )}
-        </div>
+        {github && (
+          <div className="flex gap-4 flex-shrink-0 mt-auto">
+            <span className="text-gray-400 font-medium text-sm">
+              Ver Projeto →{' '}
+              <a
+                href={github}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-400 font-medium text-sm underline"
+              >
+                GitHub
+              </a>
+            </span>
+          </div>
+        )}
       </div>
     </div>
   )
