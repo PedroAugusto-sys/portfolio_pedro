@@ -44,6 +44,15 @@ const ProjectCard3D = ({ modelPath, modelIndex }: ProjectCard3DProps) => {
     setHovered(false)
   }
 
+  const handlePointerDown = () => {
+    setHovered(true)
+    track3DInteraction('touch', `project_card_${modelIndex}`)
+  }
+
+  const handlePointerUp = () => {
+    setHovered(false)
+  }
+
   const clonedScene = scene.clone()
 
   const isSmartphone = modelPath.includes('smartphone')
@@ -57,6 +66,8 @@ const ProjectCard3D = ({ modelPath, modelIndex }: ProjectCard3DProps) => {
         onClick={handleClick}
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
         scale={[BASE_SCALE, BASE_SCALE, BASE_SCALE]}
       >
         <primitive object={clonedScene} />

@@ -67,6 +67,17 @@ body {
 canvas {
   background: transparent !important;
   display: block;
+  position: relative;
+  /* Permitir scroll vertical mas prevenir interferência nos objetos 3D */
+  touch-action: pan-y;
+  -webkit-touch-callout: none; /* Desabilitar menu de contexto no iOS */
+  -webkit-user-select: none; /* Desabilitar seleção no iOS */
+  user-select: none;
+  /* Garantir que objetos 3D permaneçam fixos durante scroll */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* Otimizações para elementos animados */

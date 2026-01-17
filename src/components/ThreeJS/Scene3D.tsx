@@ -58,6 +58,9 @@ const SceneContent = ({
           enablePan={false}
           minDistance={3}
           maxDistance={10}
+          enableRotate={true}
+          enableDamping={true}
+          dampingFactor={0.05}
         />
       )}
       {children}
@@ -74,7 +77,15 @@ const Scene3D = ({
   const isMobile = useMobile()
 
   return (
-    <div className={`w-full h-full ${className}`} style={{ background: 'transparent' }}>
+    <div 
+      className={`w-full h-full ${className}`} 
+      style={{ 
+        background: 'transparent', 
+        touchAction: isMobile ? 'pan-y' : 'auto',
+        position: 'relative',
+        isolation: 'isolate'
+      }}
+    >
       <Canvas
         gl={{ 
           antialias: false,
@@ -88,10 +99,18 @@ const Scene3D = ({
           precision: 'highp',
           premultipliedAlpha: false,
         }}
-        dpr={[1, 1]}
+        dpr={isMobile ? [1, 1.5] : [1, 2]}
         camera={{ position: cameraPosition }}
         performance={{ min: 0.5, max: 1, debounce: 200 }}
-        style={{ background: 'transparent' }}
+        style={{ 
+          background: 'transparent', 
+          touchAction: isMobile ? 'pan-y' : 'auto',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%'
+        }}
         frameloop="always"
         onCreated={({ gl, scene }) => {
           try {

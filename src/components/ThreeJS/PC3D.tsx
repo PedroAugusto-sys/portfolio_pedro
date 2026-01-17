@@ -40,6 +40,15 @@ const PC3D = () => {
     document.body.style.cursor = 'auto'
   }
 
+  const handlePointerDown = () => {
+    setHovered(true)
+    track3DInteraction('touch', 'hero_pc')
+  }
+
+  const handlePointerUp = () => {
+    setHovered(false)
+  }
+
   const pc = useMemo(() => {
     const cloned = pcScene.clone(true)
     preserveMaterials(cloned)
@@ -58,6 +67,8 @@ const PC3D = () => {
         onClick={handleClick}
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
       >
         <primitive object={pc} />
       </group>
