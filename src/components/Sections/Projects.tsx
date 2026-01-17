@@ -173,9 +173,9 @@ const Projects = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 mb-16">
+        <div className="grid md:grid-cols-2 gap-8 mb-16 items-stretch">
           {projects.map((project) => (
-            <div key={project.id} className="project-card">
+            <div key={project.id} className="project-card h-full flex">
               <ProjectCard
                 title={project.title}
                 description={project.description}
