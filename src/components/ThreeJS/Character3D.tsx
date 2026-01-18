@@ -349,30 +349,54 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
     }
 
     // ========================================
-    // ANIMAÇÕES BASEADAS NO SCROLL
+    // ANIMAÇÕES BASEADAS NO SCROLL COM GRAVIDADE SIMULADA
     // ========================================
 
-    // 1. QUEDA/SUBIDA VERTICAL - CORRIGIDO para funcionar
+    // 1. QUEDA/SUBIDA VERTICAL COM GRAVIDADE E INÉRCIA
     const fallStartY = centerOffset.y + 2
     const fallEndY = centerOffset.y - (isMobile ? 4 : 6)
     const fallDistance = fallStartY - fallEndY
     
-    // Usar scroll diretamente sem easing para movimento mais responsivo
-    // Easing pode ser adicionado depois se necessário
+    // Calcular posição alvo baseada no scroll
     const targetY = fallStartY - (scroll * fallDistance)
+    
+    // Aplicar "gravidade" usando lerp baixo para criar inércia/peso
+    // Quanto menor o valor (0.05), mais "pesado" o personagem parece
+    const gravityLerp = isScrollingDown ? 0.05 : 0.08 // Mais pesado ao descer, mais leve ao subir
+    innerGroupRef.current.position.y = THREE.MathUtils.lerp(
+      innerGroupRef.current.position.y,
+      targetY,
+      gravityLerp
+    )
 
-    // 2. MOVIMENTO LATERAL
+    // 2. MOVIMENTO LATERAL COM INÉRCIA
     const lateralDirection = isScrollingUp ? -1 : 1
     const targetX = centerOffset.x + (scroll * 1.5 * lateralDirection)
+    
+    // Aplicar inércia lateral também
+    innerGroupRef.current.position.x = THREE.MathUtils.lerp(
+      innerGroupRef.current.position.x,
+      targetX,
+      0.06
+    )
 
-    // 3. MOVIMENTO DE PROFUNDIDADE
+    // 3. MOVIMENTO DE PROFUNDIDADE COM INÉRCIA
     const depthDirection = isScrollingUp ? 1 : -1
     const targetZ = centerOffset.z + (scroll * 1.0 * depthDirection)
-
-    // Aplicar posições - TODAS DIRETAS para resposta imediata (sem lerp)
-    innerGroupRef.current.position.y = targetY
-    innerGroupRef.current.position.x = targetX
-    innerGroupRef.current.position.z = targetZ
+    
+    innerGroupRef.current.position.z = THREE.MathUtils.lerp(
+      innerGroupRef.current.position.z,
+      targetZ,
+      0.06
+    )
+    
+    // 4. EFEITO DE "IMPACTO" - Tremida quando chega no final
+    if (scroll > 0.98) {
+      const shakeIntensity = (scroll - 0.98) * 5 // Intensidade aumenta conforme se aproxima de 1
+      innerGroupRef.current.position.x += (Math.random() - 0.5) * 0.1 * shakeIntensity
+      innerGroupRef.current.position.y += (Math.random() - 0.5) * 0.05 * shakeIntensity
+      innerGroupRef.current.position.z += (Math.random() - 0.5) * 0.1 * shakeIntensity
+    }
 
     // 4. ESCALA
     const minScale = BASE_SCALE * 0.8
