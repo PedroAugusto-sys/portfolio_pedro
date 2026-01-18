@@ -274,8 +274,9 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
     // Inicializar posição, escala e rotação na primeira execução
     if (!initializedRef.current) {
       // Começar bem acima (de cima) para o efeito de queda
+      // Esta posição inicial será sobrescrita pela animação de scroll, mas serve como base
       const initialScale = isMobile ? BASE_SCALE * 0.6 : BASE_SCALE * 0.7
-      const startY = centerOffset.y + (isMobile ? 4 : 6)
+      const startY = centerOffset.y + (isMobile ? 6 : 10) // Mesma posição inicial usada na animação
       innerGroupRef.current.position.set(centerOffset.x, startY, centerOffset.z)
       innerGroupRef.current.scale.set(initialScale, initialScale, initialScale)
       innerGroupRef.current.rotation.set(0, 0, 0)
@@ -331,7 +332,8 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
     let effectiveScrollProgress = scrollProgress
 
     // Fallback: recalcula progresso de scroll direto do DOM se o prop estiver "travado"
-    if (now - lastScrollUpdateRef.current > 200) {
+    // Isso garante que mesmo se o scrollProgress não atualizar, ainda funcionará
+    if (now - lastScrollUpdateRef.current > 200 || Math.abs(scrollProgress - effectiveScrollProgress) > 0.1) {
       const heroElement = document.getElementById('hero')
       if (heroElement) {
         const rect = heroElement.getBoundingClientRect()
@@ -341,42 +343,46 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
         } else if (rect.top > window.innerHeight) {
           effectiveScrollProgress = 0
         } else {
-          const scrolled = Math.abs(rect.top)
+          // Quando rect.top é negativo, significa que já scrollou para baixo
+          // Quanto mais negativo, mais scrollou
+          const scrolled = Math.max(0, -rect.top)
           effectiveScrollProgress = Math.max(0, Math.min(1, scrolled / sectionHeight))
         }
       }
     }
 
     // ANIMAÇÃO DE QUEDA: Personagem cai de cima para baixo conforme o scroll
+    // Quanto mais você scrolla, mais o personagem desce (como se estivesse caindo)
     
-    // Posição Y: começa de cima e cai para baixo conforme scroll aumenta
-    // Quanto mais scroll, mais baixo o personagem vai
-    const startY = centerOffset.y + (isMobile ? 5 : 8) // Posição inicial (bem acima)
-    const endY = centerOffset.y - (isMobile ? 4 : 6) // Posição final (bem abaixo)
+    // Posição Y: começa bem acima e cai para baixo conforme scroll aumenta
+    // scrollProgress 0 = no topo (posição inicial), scrollProgress 1 = embaixo (posição final)
+    const startY = centerOffset.y + (isMobile ? 6 : 10) // Posição inicial (bem acima)
+    const endY = centerOffset.y - (isMobile ? 5 : 8) // Posição final (bem abaixo)
     const fallDistance = startY - endY // Distância total da queda
     
     // Interpola a posição Y baseada no scrollProgress
-    // scrollProgress 0 = no topo, scrollProgress 1 = embaixo
+    // Quando scrollProgress = 0, personagem está em startY (alto)
+    // Quando scrollProgress = 1, personagem está em endY (baixo)
     const targetPosY = startY - (effectiveScrollProgress * fallDistance)
     
     // Posição X: pequeno movimento lateral baseado no scroll (opcional)
-    const targetPosX = centerOffset.x + (effectiveScrollProgress * 0.3) // Move levemente para a direita
+    const targetPosX = centerOffset.x + (effectiveScrollProgress * 0.5) // Move levemente para a direita
     
     // Posição Z: pequeno movimento para frente/trás baseado no scroll
-    const targetPosZ = centerOffset.z + (effectiveScrollProgress * -0.5) // Move levemente para trás
+    const targetPosZ = centerOffset.z + (effectiveScrollProgress * -0.8) // Move levemente para trás
     
-    // Aplicar posições com resposta direta ao scroll
-    // Y sem lerp para garantir a queda visível
+    // Aplicar posições com resposta direta ao scroll (sem lerp no Y para resposta imediata)
     innerGroupRef.current.position.x = THREE.MathUtils.lerp(
       innerGroupRef.current.position.x,
       targetPosX,
-      lerpFactor * 1.5
+      0.8 // Mais rápido para resposta imediata
     )
+    // Y sem lerp para garantir que a queda seja visível e imediata
     innerGroupRef.current.position.y = targetPosY
     innerGroupRef.current.position.z = THREE.MathUtils.lerp(
       innerGroupRef.current.position.z,
       targetPosZ,
-      lerpFactor * 1.5
+      0.8
     )
 
     // Escala: aumenta um pouco conforme cai (efeito de aproximação)
@@ -392,30 +398,30 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
 
     // Rotação: simula o boneco girando enquanto cai
     // Rotação Y: combina rotação base com rotação do scroll
-    const baseRotationY = state.clock.elapsedTime * 0.2 // Rotação base mais lenta
-    const scrollRotationY = effectiveScrollProgress * Math.PI * 0.6 // Rotação adicional do scroll (aumentada)
+    const baseRotationY = state.clock.elapsedTime * 0.15 // Rotação base mais lenta
+    const scrollRotationY = effectiveScrollProgress * Math.PI * 1.2 // Rotação adicional do scroll (aumentada para ser mais visível)
     const targetRotationY = baseRotationY + scrollRotationY
     
     groupRef.current.rotation.y = THREE.MathUtils.lerp(
       groupRef.current.rotation.y,
       targetRotationY,
-      lerpFactor * 1.5 // Mais rápido para seguir a rotação base
+      0.6 // Mais rápido para resposta imediata
     )
     
     // Rotação X: inclina para frente conforme cai (como se estivesse caindo de cabeça)
-    const targetRotationX = effectiveScrollProgress * Math.PI * 0.5 // Até 90 graus (aumentado)
+    const targetRotationX = effectiveScrollProgress * Math.PI * 0.6 // Até ~108 graus (mais inclinado)
     groupRef.current.rotation.x = THREE.MathUtils.lerp(
       groupRef.current.rotation.x,
       targetRotationX,
-      lerpFactor * 1.5
+      0.6
     )
     
     // Rotação Z: rotação lateral (como se estivesse girando no ar)
-    const targetRotationZ = effectiveScrollProgress * Math.PI * 0.4 // Até 72 graus (aumentado)
+    const targetRotationZ = effectiveScrollProgress * Math.PI * 0.5 // Até 90 graus (mais rotação)
     innerGroupRef.current.rotation.z = THREE.MathUtils.lerp(
       innerGroupRef.current.rotation.z,
       targetRotationZ,
-      lerpFactor * 1.5
+      0.6
     )
 
     // --- SISTEMA DE PARTÍCULAS DE RASTRO NO SCROLL ---

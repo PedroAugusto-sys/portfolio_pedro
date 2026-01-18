@@ -148,7 +148,8 @@ const Hero = () => {
         // Está na viewport - calcular progresso baseado em quanto já scrollou
         // Quando top = 0 (topo no topo da viewport): progress = 0
         // Quando top = -sectionHeight (bottom no topo da viewport): progress = 1
-        const scrolled = Math.abs(rect.top)
+        // Usar Math.max(0, rect.top) para garantir que só comece quando a seção entrar na viewport
+        const scrolled = Math.max(0, -rect.top) // Quanto mais negativo, mais scrollou
         const totalScrollable = sectionHeight
         const progress = Math.max(0, Math.min(1, scrolled / totalScrollable))
         return progress
@@ -188,8 +189,8 @@ const Hero = () => {
         scrollTrigger: {
           trigger: heroRef.current,
           start: 'top top',
-          end: `+=${sectionHeight}`,
-          scrub: true,
+          end: `bottom top`,
+          scrub: 0.5, // Suavização do scroll (0 = instantâneo, 1 = mais suave)
           invalidateOnRefresh: true,
           refreshPriority: 1,
           onUpdate: (self) => {
