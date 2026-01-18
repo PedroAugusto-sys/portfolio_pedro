@@ -209,27 +209,23 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
   useFrame((state, delta) => {
     if (!groupRef.current || !innerGroupRef.current) return
 
-    // Calcular scroll progress - CORRIGIDO para funcionar corretamente
+    // Usar o valor do prop scrollProgress diretamente (já calculado no Hero.tsx)
+    // Apenas usar cálculo do DOM como fallback se o prop não estiver disponível
     let currentScroll = scrollProgress
     
-    // Usar o valor do prop primeiro, mas também calcular do DOM como fallback
+    // Fallback: calcular do DOM apenas se scrollProgress não mudou recentemente
     const heroElement = document.getElementById('hero')
-    if (heroElement) {
+    if (heroElement && (scrollProgress === 0 || Math.abs(scrollProgress - scrollRef.current) < 0.01)) {
       const rect = heroElement.getBoundingClientRect()
       const sectionHeight = heroElement.offsetHeight || window.innerHeight
       const viewportHeight = window.innerHeight
       
-      // Quando o topo da seção está no topo da viewport: scroll = 0
-      // Quando o bottom da seção está no topo da viewport: scroll = 1
       if (rect.bottom <= 0) {
-        // Seção já passou completamente
         currentScroll = 1
       } else if (rect.top >= viewportHeight) {
-        // Seção ainda não entrou na viewport
         currentScroll = 0
       } else {
         // Seção está visível - calcular progresso
-        // rect.top é negativo quando scrollou para baixo
         const scrolled = Math.max(0, -rect.top)
         currentScroll = Math.max(0, Math.min(1, scrolled / sectionHeight))
       }
@@ -252,8 +248,8 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
     
     previousScrollRef.current = currentScroll
 
-    // Suavizar transição do scroll - mais rápido para resposta imediata
-    scrollRef.current = THREE.MathUtils.lerp(scrollRef.current, currentScroll, 0.25)
+    // Suavizar transição do scroll - MUITO MAIS RÁPIDO para resposta imediata
+    scrollRef.current = THREE.MathUtils.lerp(scrollRef.current, currentScroll, 0.5)
     const scroll = scrollRef.current
     
     // ========================================
@@ -361,13 +357,9 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
     const fallEndY = centerOffset.y - (isMobile ? 4 : 6)
     const fallDistance = fallStartY - fallEndY
     
-    let easedScroll: number
-    if (isScrollingUp) {
-      easedScroll = 1 - Math.pow(1 - scroll, 2)
-    } else {
-      easedScroll = scroll * scroll
-    }
-    const targetY = fallStartY - (easedScroll * fallDistance)
+    // Usar scroll diretamente sem easing para movimento mais responsivo
+    // Easing pode ser adicionado depois se necessário
+    const targetY = fallStartY - (scroll * fallDistance)
 
     // 2. MOVIMENTO LATERAL
     const lateralDirection = isScrollingUp ? -1 : 1
@@ -377,18 +369,10 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
     const depthDirection = isScrollingUp ? 1 : -1
     const targetZ = centerOffset.z + (scroll * 1.0 * depthDirection)
 
-    // Aplicar posições - Y DIRETO para resposta imediata
+    // Aplicar posições - TODAS DIRETAS para resposta imediata (sem lerp)
     innerGroupRef.current.position.y = targetY
-    innerGroupRef.current.position.x = THREE.MathUtils.lerp(
-      innerGroupRef.current.position.x,
-      targetX,
-      0.2
-    )
-    innerGroupRef.current.position.z = THREE.MathUtils.lerp(
-      innerGroupRef.current.position.z,
-      targetZ,
-      0.2
-    )
+    innerGroupRef.current.position.x = targetX
+    innerGroupRef.current.position.z = targetZ
 
     // 4. ESCALA
     const minScale = BASE_SCALE * 0.8
