@@ -1,5 +1,5 @@
-import { useRef, useMemo, useEffect, useState } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
+import { useRef, useMemo, useEffect } from 'react'
+import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { track3DInteraction } from '../../utils/analytics'
@@ -22,7 +22,6 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
   const groupRef = useRef<THREE.Group>(null)
   const innerGroupRef = useRef<THREE.Group>(null)
   const { scene: characterScene } = useGLTF('/models/hero/character.glb')
-  const { viewport } = useThree()
   const isMobile = useMobile()
   
   // Refs para animação

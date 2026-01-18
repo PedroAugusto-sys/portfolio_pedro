@@ -63,19 +63,28 @@ const ProjectCard = ({
             </span>
           ))}
         </div>
-        {github && (
+        {(link || github) && (
           <div className="flex gap-4 flex-shrink-0 mt-auto">
-            <span className="text-gray-400 font-medium text-sm">
-              Ver Projeto →{' '}
+            {link && (
+              <a
+                href={link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-400 font-medium text-sm hover:underline"
+              >
+                Ver Projeto →
+              </a>
+            )}
+            {github && (
               <a
                 href={github}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 font-medium text-sm underline"
+                className="text-gray-400 font-medium text-sm hover:underline"
               >
                 GitHub
               </a>
-            </span>
+            )}
           </div>
         )}
       </div>

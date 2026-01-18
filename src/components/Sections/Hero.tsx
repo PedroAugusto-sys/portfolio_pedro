@@ -183,13 +183,11 @@ const Hero = () => {
         scrollTriggerInstance.kill()
       }
 
-      const sectionHeight = heroRef.current.offsetHeight || window.innerHeight
-
       scrollTriggerInstance = gsap.to({}, {
         scrollTrigger: {
           trigger: heroRef.current,
           start: 'top top',
-          end: `bottom top`,
+          end: 'bottom top',
           scrub: 0.5, // Suavização do scroll (0 = instantâneo, 1 = mais suave)
           invalidateOnRefresh: true,
           refreshPriority: 1,
@@ -244,7 +242,7 @@ const Hero = () => {
     if (!canvasContainer) return
 
     let cleanupFunctions: (() => void)[] = []
-    let checkCanvasInterval: NodeJS.Timeout | null = null
+    let checkCanvasInterval: ReturnType<typeof setInterval> | null = null
 
     const applyFixedCanvasSize = (canvas: HTMLCanvasElement) => {
       // Obtém o tamanho do container
