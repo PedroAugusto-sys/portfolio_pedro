@@ -185,7 +185,7 @@ const About = () => {
           </div>
 
           {/* Objeto 3D Decorativo */}
-          <div className="relative h-[600px] md:h-[800px] lg:h-[900px] xl:h-[1000px] animate-on-scroll overflow-hidden md:overflow-visible">
+          <div className="relative h-[400px] sm:h-[500px] md:h-[800px] lg:h-[900px] xl:h-[1000px] animate-on-scroll overflow-hidden md:overflow-visible">
             <div className="absolute inset-0 w-full h-full pointer-events-auto" style={{ zIndex: 1 }}>
               <Suspense fallback={<div className="w-full h-full bg-gray-900 rounded-lg flex items-center justify-center">Carregando 3D...</div>}>
                 <Scene3D
