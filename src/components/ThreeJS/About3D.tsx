@@ -20,7 +20,9 @@ const About3D = () => {
   const BASE_SCALE = 0.8
   // Mobile reduzido para diminuir área de interação: de 7.15 para 5.5
   // Desktop mantém 9.36
-  const TARGET_BASE_SCALE = isMobile ? BASE_SCALE * 5.5 : BASE_SCALE * 9.36
+  const TARGET_BASE_SCALE = isMobile
+    ? BASE_SCALE * 5.5 * 0.85
+    : BASE_SCALE * 9.36 * 0.85
 
   useFrame((state) => {
     if (groupRef.current && innerGroupRef.current) {
