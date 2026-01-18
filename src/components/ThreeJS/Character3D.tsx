@@ -10,15 +10,6 @@ interface Character3DProps {
   scrollProgress?: number
 }
 
-interface Particle {
-  position: THREE.Vector3
-  velocity: THREE.Vector3
-  life: number
-  maxLife: number
-  size: number
-  color: THREE.Color
-}
-
 // Cores para os diferentes estados
 const COLORS = {
   idle: new THREE.Color(0x00ffff),      // Ciano - estado parado
@@ -30,7 +21,6 @@ const COLORS = {
 const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
   const groupRef = useRef<THREE.Group>(null)
   const innerGroupRef = useRef<THREE.Group>(null)
-  const glowRef = useRef<THREE.PointLight | null>(null)
   const { scene: characterScene } = useGLTF('/models/hero/character.glb')
   const isMobile = useMobile()
   
@@ -46,17 +36,13 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
   const targetGlowColorRef = useRef(new THREE.Color(0x00ffff))
   const glowIntensityRef = useRef(0.5)
   
-  // Refs para mouse tracking
+  // Refs para mouse tracking (olhar interativo)
   const mouseRef = useRef({ x: 0, y: 0 })
-  
-  // Refs para sistema de partículas
-  const particlesRef = useRef<Particle[]>([])
-  const particlesGeometryRef = useRef<THREE.BufferGeometry | null>(null)
-  const particlesMaterialRef = useRef<THREE.PointsMaterial | null>(null)
-  const particlesSystemRef = useRef<THREE.Points | null>(null)
+  const headBoneRef = useRef<THREE.Bone | null>(null)
+  const neckBoneRef = useRef<THREE.Bone | null>(null)
   
   // Refs para animação de scroll reverso
-  const reverseAnimationRef = useRef(0) // 0 = normal, 1 = totalmente reverso
+  const reverseAnimationRef = useRef(0)
   const spinVelocityRef = useRef(0)
 
   // Clonar e preparar o personagem
@@ -69,6 +55,57 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
         child.frustumCulled = false
         child.castShadow = false
         child.receiveShadow = false
+      }
+      
+      // Procurar ossos da cabeça e pescoço para o olhar interativo
+      if (child instanceof THREE.SkinnedMesh && child.skeleton) {
+        const bones = child.skeleton.bones
+        
+        // Função para buscar osso por nome
+        const findBone = (targetNames: string[]): THREE.Bone | null => {
+          for (const bone of bones) {
+            const boneName = bone.name.toLowerCase()
+            for (const target of targetNames) {
+              if (boneName.includes(target.toLowerCase())) {
+                return bone
+              }
+            }
+          }
+          return null
+        }
+        
+        // Procurar osso da cabeça
+        const headBone = findBone(['head', 'cabeça', 'skull', 'cranio', 'cabeca'])
+        if (headBone) {
+          headBoneRef.current = headBone
+        }
+        
+        // Procurar osso do pescoço
+        const neckBone = findBone(['neck', 'pescoço', 'pescoco'])
+        if (neckBone) {
+          neckBoneRef.current = neckBone
+        }
+        
+        // Se não encontrou cabeça mas encontrou pescoço, usar pescoço
+        if (!headBoneRef.current && neckBoneRef.current) {
+          headBoneRef.current = neckBoneRef.current
+        }
+        
+        // Se não encontrou nenhum, procurar o osso mais alto
+        if (!headBoneRef.current && bones.length > 0) {
+          let topBone = bones[0]
+          let maxY = -Infinity
+          
+          for (const bone of bones) {
+            const worldPos = new THREE.Vector3()
+            bone.getWorldPosition(worldPos)
+            if (worldPos.y > maxY) {
+              topBone = bone
+              maxY = worldPos.y
+            }
+          }
+          headBoneRef.current = topBone
+        }
       }
     })
     
@@ -101,41 +138,6 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
     window.addEventListener('mousemove', handleMouseMove, { passive: true })
     return () => window.removeEventListener('mousemove', handleMouseMove)
   }, [isMobile])
-
-  // Inicializar sistema de partículas
-  useEffect(() => {
-    const geometry = new THREE.BufferGeometry()
-    const maxParticles = 300
-    const positions = new Float32Array(maxParticles * 3)
-    const colors = new Float32Array(maxParticles * 3)
-    positions.fill(0)
-    colors.fill(1)
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
-    
-    particlesGeometryRef.current = geometry
-
-    const material = new THREE.PointsMaterial({
-      size: 0.15,
-      transparent: true,
-      opacity: 0.9,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      sizeAttenuation: true,
-      vertexColors: true, // Usar cores por vértice
-    })
-    
-    particlesMaterialRef.current = material
-
-    const particles = new THREE.Points(geometry, material)
-    particles.frustumCulled = false
-    particlesSystemRef.current = particles
-
-    return () => {
-      geometry.dispose()
-      material.dispose()
-    }
-  }, [])
 
   // Frame loop principal
   useFrame((state, delta) => {
@@ -182,11 +184,9 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
     // ========================================
     // ANIMAÇÃO DE SCROLL REVERSO
     // ========================================
-    // Quando sobe (scroll reverso), o personagem tem comportamento diferente
     const isScrollingUp = scrollDirectionRef.current === 'up'
     const isScrollingDown = scrollDirectionRef.current === 'down'
     
-    // Transição suave para estado reverso
     const targetReverse = isScrollingUp ? 1 : 0
     reverseAnimationRef.current = THREE.MathUtils.lerp(
       reverseAnimationRef.current,
@@ -202,42 +202,76 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
       innerGroupRef.current.rotation.set(0, 0, 0)
       groupRef.current.rotation.set(0, 0, 0)
       initializedRef.current = true
-      
-      if (particlesSystemRef.current) {
-        groupRef.current.add(particlesSystemRef.current)
-      }
     }
 
     // ========================================
     // MUDANÇA DE COR / GLOW
     // ========================================
-    // Determinar cor alvo baseada no estado
     const speed = scrollVelocityRef.current
     
     if (speed < 0.5) {
-      // Parado ou muito lento - ciano
       targetGlowColorRef.current.copy(COLORS.idle)
       glowIntensityRef.current = THREE.MathUtils.lerp(glowIntensityRef.current, 0.5, 0.1)
     } else if (speed > 3) {
-      // Movimento muito rápido - rosa/magenta
       targetGlowColorRef.current.copy(COLORS.fast)
       glowIntensityRef.current = THREE.MathUtils.lerp(glowIntensityRef.current, 2.5, 0.1)
     } else if (isScrollingUp) {
-      // Subindo - verde
       targetGlowColorRef.current.copy(COLORS.rising)
       glowIntensityRef.current = THREE.MathUtils.lerp(glowIntensityRef.current, 1.5 + speed * 0.3, 0.1)
     } else if (isScrollingDown) {
-      // Descendo - laranja
       targetGlowColorRef.current.copy(COLORS.falling)
       glowIntensityRef.current = THREE.MathUtils.lerp(glowIntensityRef.current, 1.0 + speed * 0.3, 0.1)
     }
     
-    // Suavizar transição de cor
     currentGlowColorRef.current.lerp(targetGlowColorRef.current, 0.08)
-    
-    // Atualizar cor das partículas
-    if (particlesMaterialRef.current) {
-      particlesMaterialRef.current.color.copy(currentGlowColorRef.current)
+
+    // ========================================
+    // OLHAR INTERATIVO (CABEÇA SEGUE O MOUSE)
+    // ========================================
+    if (!isMobile && headBoneRef.current) {
+      // Atualizar skeleton
+      character.traverse((child) => {
+        if (child instanceof THREE.SkinnedMesh && child.skeleton) {
+          child.skeleton.update()
+        }
+      })
+      
+      // Calcular rotação alvo baseada na posição do mouse
+      // Quanto mais o mouse está para a direita, mais a cabeça vira para a direita
+      const targetHeadRotY = mouseRef.current.x * 0.6 // Rotação horizontal (esquerda/direita)
+      const targetHeadRotX = -mouseRef.current.y * 0.4 // Rotação vertical (cima/baixo)
+      
+      // Aplicar rotação suavizada no osso da cabeça
+      headBoneRef.current.rotation.y = THREE.MathUtils.lerp(
+        headBoneRef.current.rotation.y,
+        targetHeadRotY,
+        0.08
+      )
+      headBoneRef.current.rotation.x = THREE.MathUtils.lerp(
+        headBoneRef.current.rotation.x,
+        targetHeadRotX,
+        0.08
+      )
+      
+      // Se também encontrou o pescoço, aplicar rotação menor nele
+      if (neckBoneRef.current && neckBoneRef.current !== headBoneRef.current) {
+        neckBoneRef.current.rotation.y = THREE.MathUtils.lerp(
+          neckBoneRef.current.rotation.y,
+          targetHeadRotY * 0.3, // Pescoço gira menos que a cabeça
+          0.05
+        )
+        neckBoneRef.current.rotation.x = THREE.MathUtils.lerp(
+          neckBoneRef.current.rotation.x,
+          targetHeadRotX * 0.2,
+          0.05
+        )
+      }
+      
+      // Atualizar matriz do osso
+      headBoneRef.current.updateMatrixWorld(true)
+      if (neckBoneRef.current) {
+        neckBoneRef.current.updateMatrixWorld(true)
+      }
     }
 
     // ========================================
@@ -249,18 +283,15 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
     const fallEndY = centerOffset.y - (isMobile ? 4 : 6)
     const fallDistance = fallStartY - fallEndY
     
-    // Easing diferente para subida vs descida
     let easedScroll: number
     if (isScrollingUp) {
-      // Subindo - easing mais suave (desacelera)
       easedScroll = 1 - Math.pow(1 - scroll, 2)
     } else {
-      // Descendo - easing de aceleração
       easedScroll = scroll * scroll
     }
     const targetY = fallStartY - (easedScroll * fallDistance)
 
-    // 2. MOVIMENTO LATERAL - Inverte direção no scroll reverso
+    // 2. MOVIMENTO LATERAL
     const lateralDirection = isScrollingUp ? -1 : 1
     const targetX = centerOffset.x + (scroll * 1.5 * lateralDirection)
 
@@ -281,7 +312,7 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
       0.2
     )
 
-    // 4. ESCALA - Maior quando subindo (efeito de "ascensão heroica")
+    // 4. ESCALA
     const minScale = BASE_SCALE * 0.8
     const maxScale = BASE_SCALE * 1.3
     const scaleBonus = isScrollingUp ? 0.2 : 0
@@ -291,22 +322,21 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
     const newScale = THREE.MathUtils.lerp(currentScale, targetScale, 0.15)
     innerGroupRef.current.scale.setScalar(newScale)
 
-    // 5. ROTAÇÃO Y (GIRO) - Inverte no scroll reverso
+    // 5. ROTAÇÃO Y (GIRO)
     const baseRotY = state.clock.elapsedTime * 0.1
     
-    // Acumular velocidade de spin baseada na direção
     if (isScrollingDown) {
       spinVelocityRef.current = THREE.MathUtils.lerp(spinVelocityRef.current, speed * 0.5, 0.1)
     } else if (isScrollingUp) {
-      spinVelocityRef.current = THREE.MathUtils.lerp(spinVelocityRef.current, -speed * 0.8, 0.1) // Gira ao contrário mais rápido
+      spinVelocityRef.current = THREE.MathUtils.lerp(spinVelocityRef.current, -speed * 0.8, 0.1)
     } else {
       spinVelocityRef.current = THREE.MathUtils.lerp(spinVelocityRef.current, 0, 0.05)
     }
     
-    const scrollRotY = scroll * Math.PI * 2 * (1 - reverseAmount * 2) // Inverte direção
+    const scrollRotY = scroll * Math.PI * 2 * (1 - reverseAmount * 2)
     groupRef.current.rotation.y = baseRotY + scrollRotY + spinVelocityRef.current
 
-    // 6. ROTAÇÃO X (INCLINAÇÃO) - Para frente ao descer, para trás ao subir
+    // 6. ROTAÇÃO X (INCLINAÇÃO)
     const tiltDirection = isScrollingUp ? -0.3 : 0.4
     const targetRotX = scroll * Math.PI * tiltDirection
     groupRef.current.rotation.x = THREE.MathUtils.lerp(
@@ -315,7 +345,7 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
       0.15
     )
 
-    // 7. ROTAÇÃO Z (CAMBALHOTA) - Inverte no scroll reverso
+    // 7. ROTAÇÃO Z (CAMBALHOTA)
     const rollDirection = isScrollingUp ? -0.4 : 0.6
     const targetRotZ = scroll * Math.PI * rollDirection
     innerGroupRef.current.rotation.z = THREE.MathUtils.lerp(
@@ -331,130 +361,16 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
       innerGroupRef.current.position.y += idleSwayY
       innerGroupRef.current.position.x += idleSwayX
       
-      // Pulsação de glow suave quando idle
       glowIntensityRef.current = 0.5 + Math.sin(state.clock.elapsedTime * 3) * 0.2
     }
 
-    // 9. OLHAR INTERATIVO (mouse tracking)
-    if (!isMobile) {
-      const lookX = mouseRef.current.x * 0.2
-      const lookY = mouseRef.current.y * 0.15
-      const lookInfluence = Math.max(0, 1 - scroll * 0.8)
-      groupRef.current.rotation.x += lookY * lookInfluence
-      innerGroupRef.current.rotation.y += lookX * lookInfluence * 0.5
-    }
-
-    // 10. EFEITO DE "RECUPERAÇÃO" AO SUBIR
-    // Quando sobe, o personagem parece "se endireitar" como um super-herói
+    // 9. EFEITO DE "RECUPERAÇÃO" AO SUBIR
     if (isScrollingUp && scroll > 0.1) {
-      // Reduz as rotações mais rapidamente (se endireitando)
       groupRef.current.rotation.x *= 0.95
       innerGroupRef.current.rotation.z *= 0.95
       
-      // Adiciona uma leve "pose heroica" - braços mais abertos (via escala X ligeiramente maior)
       const heroicPose = reverseAmount * 0.1
       innerGroupRef.current.scale.x = newScale * (1 + heroicPose)
-    }
-
-    // ========================================
-    // SISTEMA DE PARTÍCULAS COM CORES
-    // ========================================
-    if (particlesSystemRef.current && particlesGeometryRef.current) {
-      // Emitir partículas com cores baseadas na direção
-      const shouldEmit = (scroll > 0.05 && speed > 0.5) || speed > 2
-      
-      if (shouldEmit) {
-        const emitCount = Math.min(Math.floor(speed * 3) + 1, 10)
-        
-        for (let i = 0; i < emitCount; i++) {
-          if (particlesRef.current.length < 300) {
-            const charPos = innerGroupRef.current.position.clone()
-            
-            // Direção das partículas baseada no movimento
-            const velY = isScrollingUp ? -0.3 - Math.random() * 0.2 : 0.2 + Math.random() * 0.3
-            
-            const particle: Particle = {
-              position: new THREE.Vector3(
-                charPos.x + (Math.random() - 0.5) * 1.0,
-                charPos.y + (Math.random() - 0.5) * 0.8,
-                charPos.z + (Math.random() - 0.5) * 1.0
-              ),
-              velocity: new THREE.Vector3(
-                (Math.random() - 0.5) * 0.6,
-                velY,
-                (Math.random() - 0.5) * 0.6
-              ),
-              life: 1.5,
-              maxLife: 1.5 + Math.random() * 0.5,
-              size: 0.1 + Math.random() * 0.15,
-              color: currentGlowColorRef.current.clone()
-            }
-            particlesRef.current.push(particle)
-          }
-        }
-      }
-
-      // Atualizar partículas existentes
-      const activeParticles: Particle[] = []
-      
-      for (let i = particlesRef.current.length - 1; i >= 0; i--) {
-        const p = particlesRef.current[i]
-        p.life -= delta
-        
-        if (p.life <= 0) {
-          particlesRef.current.splice(i, 1)
-          continue
-        }
-
-        p.position.add(p.velocity.clone().multiplyScalar(delta))
-        
-        // Gravidade diferente baseada na direção original
-        const gravityDirection = isScrollingUp ? 0.2 : -0.3
-        p.velocity.y += delta * gravityDirection
-        p.velocity.multiplyScalar(0.98)
-        
-        activeParticles.push(p)
-      }
-
-      // Atualizar geometria com posições e cores
-      if (activeParticles.length > 0) {
-        const positions = new Float32Array(activeParticles.length * 3)
-        const colors = new Float32Array(activeParticles.length * 3)
-        
-        for (let i = 0; i < activeParticles.length; i++) {
-          const p = activeParticles[i]
-          const lifeRatio = p.life / p.maxLife
-          
-          positions[i * 3] = p.position.x
-          positions[i * 3 + 1] = p.position.y
-          positions[i * 3 + 2] = p.position.z
-          
-          // Cor com fade baseado na vida
-          colors[i * 3] = p.color.r * lifeRatio
-          colors[i * 3 + 1] = p.color.g * lifeRatio
-          colors[i * 3 + 2] = p.color.b * lifeRatio
-        }
-        
-        particlesGeometryRef.current.setAttribute(
-          'position',
-          new THREE.BufferAttribute(positions, 3)
-        )
-        particlesGeometryRef.current.setAttribute(
-          'color',
-          new THREE.BufferAttribute(colors, 3)
-        )
-        particlesGeometryRef.current.setDrawRange(0, activeParticles.length)
-        particlesGeometryRef.current.attributes.position.needsUpdate = true
-        particlesGeometryRef.current.attributes.color.needsUpdate = true
-        
-        if (particlesMaterialRef.current) {
-          particlesMaterialRef.current.opacity = 0.8
-        }
-        
-        particlesSystemRef.current.visible = true
-      } else {
-        particlesSystemRef.current.visible = false
-      }
     }
   })
 
@@ -466,7 +382,6 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
     <group ref={groupRef} onClick={handleClick}>
       {/* Luz de glow que segue o personagem */}
       <pointLight
-        ref={glowRef}
         color={currentGlowColorRef.current}
         intensity={glowIntensityRef.current}
         distance={8}
