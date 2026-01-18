@@ -11,6 +11,7 @@ const Hero = lazy(() => import('./components/Sections/Hero'))
 const About = lazy(() => import('./components/Sections/About'))
 const Projects = lazy(() => import('./components/Sections/Projects'))
 const Achievements = lazy(() => import('./components/Sections/Achievements'))
+const Contact = lazy(() => import('./components/Sections/Contact'))
 
 function App() {
   const [isLoading, setIsLoading] = useState(true)
@@ -58,6 +59,7 @@ function App() {
               <About />
               <Projects />
               <Achievements />
+              <Contact />
             </Suspense>
           </main>
           <Loader />

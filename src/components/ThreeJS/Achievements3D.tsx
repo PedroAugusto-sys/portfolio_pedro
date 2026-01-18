@@ -57,7 +57,7 @@ const Achievements3D = () => {
       <group 
         ref={innerGroupRef}
         position={[centerOffset.x, centerOffset.y, centerOffset.z]}
-        scale={[BASE_SCALE * 1.5, BASE_SCALE * 1.5, BASE_SCALE * 1.5]}
+        scale={[BASE_SCALE * 2.7, BASE_SCALE * 2.7, BASE_SCALE * 2.7]}
       >
         <primitive object={rubiksCube} />
       </group>

@@ -137,19 +137,42 @@ const Projects = () => {
 
       const cards = elementRef.current.querySelectorAll('.project-card')
       cards.forEach((card, index) => {
-        gsap.set(card, { opacity: 0, y: 50, scale: 0.95 })
+        gsap.set(card, { 
+          opacity: 0, 
+          y: 80, 
+          scale: 0.85,
+          rotationX: -15,
+          rotationY: index % 2 === 0 ? -10 : 10
+        })
+        
+        // Animação de entrada com efeito 3D
         gsap.to(card, {
           opacity: 1,
           y: 0,
           scale: 1,
-          duration: 0.5,
-          delay: 0.1 + index * 0.05,
-          ease: 'power3.out',
+          rotationX: 0,
+          rotationY: 0,
+          duration: 0.8,
+          delay: 0.1 + index * 0.08,
+          ease: 'back.out(1.4)',
           scrollTrigger: {
             trigger: card,
             start: 'top 90%',
             toggleActions: 'play none none none',
             once: true,
+          },
+        })
+
+        // Animação parallax no scroll
+        gsap.to(card, {
+          y: -30,
+          duration: 1,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: card,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: 1,
           },
         })
       })
@@ -165,10 +188,10 @@ const Projects = () => {
     >
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
             Meus <span className="text-primary-400">Projetos</span>
           </h2>
-          <p className="text-gray-400 text-lg">
+          <p className="text-gray-400 text-base sm:text-lg">
             Uma seleção dos meus trabalhos mais recentes
           </p>
         </div>

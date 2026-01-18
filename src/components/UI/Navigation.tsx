@@ -40,6 +40,7 @@ const Navigation = () => {
     { id: 'about', label: 'Sobre' },
     { id: 'projects', label: 'Projetos' },
     { id: 'achievements', label: 'Feitos' },
+    { id: 'contact', label: 'Contatos' },
   ]
 
   return (
@@ -109,13 +110,13 @@ const Navigation = () => {
       </div>
 
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-black/95 backdrop-blur-md">
-          <div className="px-2 pt-2 pb-3 space-y-1">
+        <div className="md:hidden bg-black/95 backdrop-blur-md border-t border-gray-800">
+          <div className="px-4 pt-3 pb-4 space-y-2">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => scrollToSection(item.id)}
-                className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium w-full text-left"
+                className="text-gray-300 hover:text-white hover:bg-gray-800/50 block px-4 py-3 rounded-lg text-base font-medium w-full text-left transition-colors"
               >
                 {item.label}
               </button>

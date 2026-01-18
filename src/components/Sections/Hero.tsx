@@ -4,7 +4,11 @@ import Character3D from '../ThreeJS/Character3D'
 import { trackSectionView } from '../../utils/analytics'
 import { useSmoothScroll } from '../../hooks/useSmoothScroll'
 import { useTypingAnimation } from '../../hooks/useTypingAnimation'
+import { useMobile } from '../../hooks/useMobile'
 import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+
+gsap.registerPlugin(ScrollTrigger)
 
 const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null)
@@ -12,10 +16,13 @@ const Hero = () => {
   const subtitleRef = useRef<HTMLParagraphElement>(null)
   const ctaRef = useRef<HTMLDivElement>(null)
   const character3DRef = useRef<HTMLDivElement>(null)
+  const canvasContainerRef = useRef<HTMLDivElement>(null)
   const { scrollTo } = useSmoothScroll()
+  const isMobile = useMobile()
   
   const [greeting, setGreeting] = useState('')
   const [showNameAnimation, setShowNameAnimation] = useState(false)
+  const [scrollProgress, setScrollProgress] = useState(0)
   
   const typedName = useTypingAnimation({
     texts: ['Predo', 'Pedro'],
@@ -111,6 +118,227 @@ const Hero = () => {
     return () => clearTimeout(timer)
   }, [])
 
+  // Cálculo de scroll otimizado com GSAP ScrollTrigger
+  useEffect(() => {
+    if (!heroRef.current) return
+
+    let scrollTriggerInstance: gsap.core.Tween | null = null
+    let rafId: number | null = null
+
+    // Função para calcular o progresso do scroll manualmente
+    const calculateScrollProgress = (): number => {
+      if (!heroRef.current) return 0
+
+      const rect = heroRef.current.getBoundingClientRect()
+      const sectionHeight = heroRef.current.offsetHeight || window.innerHeight
+      const viewportHeight = window.innerHeight
+      
+      // Calcular progresso baseado na posição da seção na viewport
+      // Quando o topo da seção está no topo da viewport: progress = 0
+      // Quando o bottom da seção está no topo da viewport: progress = 1
+      // Progresso varia de 0 a 1 enquanto a seção está visível
+      
+      if (rect.bottom < 0) {
+        // Já saiu completamente
+        return 1
+      } else if (rect.top > viewportHeight) {
+        // Ainda não entrou na viewport
+        return 0
+      } else {
+        // Está na viewport - calcular progresso baseado em quanto já scrollou
+        // Quando top = 0 (topo no topo da viewport): progress = 0
+        // Quando top = -sectionHeight (bottom no topo da viewport): progress = 1
+        const scrolled = Math.abs(rect.top)
+        const totalScrollable = sectionHeight
+        const progress = Math.max(0, Math.min(1, scrolled / totalScrollable))
+        return progress
+      }
+    }
+
+    // Handler de scroll usando requestAnimationFrame para throttling
+    const handleScroll = () => {
+      if (rafId !== null) return // Evita múltiplas chamadas simultâneas
+      
+      rafId = requestAnimationFrame(() => {
+        const progress = calculateScrollProgress()
+        setScrollProgress(progress)
+        rafId = null
+      })
+    }
+    
+    // Forçar atualização inicial
+    const initialProgress = calculateScrollProgress()
+    setScrollProgress(initialProgress)
+
+    // Configurar ScrollTrigger com delay para garantir que o DOM esteja pronto
+    const setupScrollTrigger = () => {
+      if (!heroRef.current) return
+
+      // Mata qualquer instância anterior
+      if (scrollTriggerInstance?.scrollTrigger) {
+        scrollTriggerInstance.scrollTrigger.kill()
+      }
+      if (scrollTriggerInstance) {
+        scrollTriggerInstance.kill()
+      }
+
+      const sectionHeight = heroRef.current.offsetHeight || window.innerHeight
+
+      scrollTriggerInstance = gsap.to({}, {
+        scrollTrigger: {
+          trigger: heroRef.current,
+          start: 'top top',
+          end: `+=${sectionHeight}`,
+          scrub: true,
+          invalidateOnRefresh: true,
+          refreshPriority: 1,
+          onUpdate: (self) => {
+            const progress = self.progress
+            setScrollProgress(progress)
+          },
+        },
+      })
+
+      // Força refresh do ScrollTrigger
+      ScrollTrigger.refresh()
+    }
+
+    // Usar listener de scroll como método principal
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll() // Calcular valor inicial
+
+    // Aguardar um pouco para garantir que o DOM esteja totalmente renderizado
+    const timeoutId = setTimeout(() => {
+      setupScrollTrigger()
+      // Forçar atualização após ScrollTrigger ser configurado
+      handleScroll()
+    }, 200)
+
+    // Recalcular quando a janela for redimensionada
+    const handleResize = () => {
+      ScrollTrigger.refresh()
+      handleScroll() // Recalcular progresso após resize
+    }
+    window.addEventListener('resize', handleResize, { passive: true })
+
+    return () => {
+      clearTimeout(timeoutId)
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+      }
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', handleResize)
+      if (scrollTriggerInstance?.scrollTrigger) {
+        scrollTriggerInstance.scrollTrigger.kill()
+      }
+      if (scrollTriggerInstance) {
+        scrollTriggerInstance.kill()
+      }
+    }
+  }, [])
+
+  // Bloquear resize do canvas durante scroll e zoom
+  useEffect(() => {
+    const canvasContainer = canvasContainerRef.current
+    if (!canvasContainer) return
+
+    let cleanupFunctions: (() => void)[] = []
+    let checkCanvasInterval: NodeJS.Timeout | null = null
+
+    const applyFixedCanvasSize = (canvas: HTMLCanvasElement) => {
+      // Obtém o tamanho do container
+      const rect = canvasContainer.getBoundingClientRect()
+      const width = rect.width
+      const height = rect.height
+      
+      // Define tamanho fixo no canvas
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
+      canvas.style.minWidth = `${width}px`
+      canvas.style.maxWidth = `${width}px`
+      canvas.style.minHeight = `${height}px`
+      canvas.style.maxHeight = `${height}px`
+      
+      // Bloqueia eventos de wheel que causam zoom (Ctrl+Scroll)
+      const handleWheel = (e: WheelEvent) => {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault()
+          e.stopPropagation()
+        }
+      }
+      
+      canvas.addEventListener('wheel', handleWheel, { passive: false })
+      cleanupFunctions.push(() => {
+        canvas.removeEventListener('wheel', handleWheel)
+      })
+      
+      // Bloqueia eventos de touch que causam zoom (pinch)
+      const handleTouch = (e: TouchEvent) => {
+        if (e.touches.length > 1) {
+          e.preventDefault()
+          e.stopPropagation()
+        }
+      }
+      
+      canvas.addEventListener('touchstart', handleTouch, { passive: false })
+      canvas.addEventListener('touchmove', handleTouch, { passive: false })
+      cleanupFunctions.push(() => {
+        canvas.removeEventListener('touchstart', handleTouch)
+        canvas.removeEventListener('touchmove', handleTouch)
+      })
+    }
+
+    const setupCanvas = () => {
+      const canvas = canvasContainer.querySelector('canvas')
+      if (canvas) {
+        applyFixedCanvasSize(canvas)
+        return true
+      }
+      return false
+    }
+
+    // Tenta imediatamente
+    if (!setupCanvas()) {
+      // Aguarda o canvas ser criado
+      checkCanvasInterval = setInterval(() => {
+        if (setupCanvas()) {
+          if (checkCanvasInterval) {
+            clearInterval(checkCanvasInterval)
+            checkCanvasInterval = null
+          }
+        }
+      }, 100)
+    }
+
+    // Observa mudanças de tamanho do container para manter canvas fixo
+    const resizeObserver = new ResizeObserver(() => {
+      const canvas = canvasContainer.querySelector('canvas')
+      if (canvas) {
+        const rect = canvasContainer.getBoundingClientRect()
+        const width = rect.width
+        const height = rect.height
+        
+        canvas.style.width = `${width}px`
+        canvas.style.height = `${height}px`
+        canvas.style.minWidth = `${width}px`
+        canvas.style.maxWidth = `${width}px`
+        canvas.style.minHeight = `${height}px`
+        canvas.style.maxHeight = `${height}px`
+      }
+    })
+
+    resizeObserver.observe(canvasContainer)
+
+    return () => {
+      if (checkCanvasInterval) {
+        clearInterval(checkCanvasInterval)
+      }
+      resizeObserver.disconnect()
+      cleanupFunctions.forEach(cleanup => cleanup())
+      cleanupFunctions = []
+    }
+  }, [])
+
   const scrollToSection = (sectionId: string) => {
     scrollTo(sectionId, { duration: 1.0, offset: -80 })
   }
@@ -122,11 +350,11 @@ const Hero = () => {
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
     >
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
+        <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+          <div className="space-y-4 md:space-y-6 order-2 md:order-1 relative z-20">
             <h1
               ref={titleRef}
-              className="text-5xl md:text-7xl font-bold text-white leading-tight"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-white leading-tight"
             >
               {greeting}
               {showNameAnimation && (
@@ -141,56 +369,85 @@ const Hero = () => {
             </h1>
             <p
               ref={subtitleRef}
-              className="text-xl md:text-2xl text-gray-300"
+              className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-300 px-2"
             >
               Desenvolvedor Full Stack especializado em tecnologias modernas
               e experiências 3D interativas
             </p>
             <div 
               ref={ctaRef} 
-              className="flex gap-4 justify-center"
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center relative z-30"
             >
               <button
-                onClick={() => scrollToSection('projects')}
-                className="px-8 py-3 bg-primary-500 text-white rounded-lg font-semibold hover:bg-primary-600 transition-colors transform hover:scale-105"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  scrollToSection('projects')
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation()
+                }}
+                className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-primary-500 text-white rounded-lg font-semibold hover:bg-primary-600 active:bg-primary-700 transition-colors transform hover:scale-105 active:scale-95 text-sm sm:text-base relative z-30 touch-manipulation"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
                 Ver Projetos
               </button>
               <button
-                onClick={() => scrollToSection('about')}
-                className="px-8 py-3 border-2 border-primary-500 text-primary-400 rounded-lg font-semibold hover:bg-primary-500/10 transition-colors"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  scrollToSection('about')
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation()
+                }}
+                className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 border-2 border-primary-500 text-primary-400 rounded-lg font-semibold hover:bg-primary-500/10 active:bg-primary-500/20 transition-colors text-sm sm:text-base relative z-30 touch-manipulation"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
                 Sobre Mim
               </button>
             </div>
           </div>
 
-          <div className="relative h-[500px] md:h-[800px] lg:h-[800px] w-full flex items-end justify-center pb-8 md:pb-12">
+          <div className="relative h-[400px] sm:h-[500px] md:h-[600px] lg:h-[800px] w-full flex items-end justify-center pb-4 sm:pb-8 md:pb-12 order-1 md:order-2" style={{ zIndex: 1 }}>
             <div 
-              ref={character3DRef} 
+              ref={canvasContainerRef}
               className="h-full w-full max-w-2xl"
               style={{ 
                 position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                pointerEvents: 'none'
               }}
             >
-              <Suspense 
-                fallback={
-                  <div className="w-full h-full bg-gray-900 rounded-lg flex items-center justify-center text-xs text-gray-400">
-                    Carregando...
-                  </div>
-                }
+              <div 
+                ref={character3DRef} 
+                className="h-full w-full"
+                style={{ 
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
               >
-                <Scene3D
-                  cameraPosition={[0, 0.8, 5]}
-                  enableControls={true}
-                  className="w-full h-full"
+                <Suspense 
+                  fallback={
+                    <div className="w-full h-full bg-gray-900 rounded-lg flex items-center justify-center text-xs text-gray-400">
+                      Carregando...
+                    </div>
+                  }
                 >
-                  <Character3D />
-                </Scene3D>
-              </Suspense>
+                  <Scene3D
+                    cameraPosition={isMobile ? [0, 0.5, 4.5] : [0, 0.8, 5]}
+                    enableControls={!isMobile}
+                    enableZoom={false}
+                    className="w-full h-full"
+                  >
+                    <Character3D scrollProgress={scrollProgress} />
+                  </Scene3D>
+                </Suspense>
+              </div>
             </div>
           </div>
         </div>

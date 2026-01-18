@@ -177,10 +177,10 @@ const Achievements = () => {
       <div className="max-w-7xl mx-auto">
         {/* Título */}
         <div className="text-center mb-16 animate-on-scroll">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
             Conquistas e <span className="text-primary-400">Feitos</span>
           </h2>
-          <p className="text-gray-400 text-lg">
+          <p className="text-gray-400 text-base sm:text-lg">
             Alguns dos meus principais marcos e realizações
           </p>
         </div>
@@ -198,7 +198,7 @@ const Achievements = () => {
                            hover:scale-105 hover:bg-gray-800 hover:shadow-lg hover:shadow-primary-500/20
                            cursor-pointer group"
               >
-                <div className="text-3xl md:text-4xl font-bold text-primary-400 mb-2
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary-400 mb-2
                               transition-all duration-300 
                               group-hover:text-primary-300 group-hover:scale-110">
                   {displayValues[index]}{stat.value.replace(/\d+/g, '')}
@@ -264,6 +264,7 @@ const Achievements = () => {
             <Scene3D
               cameraPosition={[0, 0, 5]}
               enableControls={true}
+              enableZoom={false}
               className="w-full h-full"
             >
               <Achievements3D />

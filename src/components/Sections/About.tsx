@@ -25,30 +25,19 @@ const About = () => {
 
   useEffect(() => {
     if (hasIntersected && contentRef.current && !animationsCreatedRef.current) {
-      gsap.set(contentRef.current, { opacity: 0, y: 30 })
-      gsap.to(contentRef.current, {
-        opacity: 1,
-        y: 0,
-        duration: 0.4,
-        ease: 'power2.out',
-        scrollTrigger: {
-          trigger: contentRef.current,
-          start: 'top 90%',
-          toggleActions: 'play none none none',
-          once: true,
-        },
-      })
+      // Removida animação do contentRef - deve permanecer sem animação
 
       const elements = elementRef.current?.querySelectorAll('.animate-on-scroll') || []
       
       elements.forEach((el, index) => {
-        gsap.set(el, { opacity: 0, y: 40 })
+        gsap.set(el, { opacity: 0, y: 60, x: index % 2 === 0 ? -30 : 30 })
         gsap.to(el, {
           opacity: 1,
           y: 0,
-          duration: 0.4,
-          delay: 0.1 + index * 0.05,
-          ease: 'power2.out',
+          x: 0,
+          duration: 0.6,
+          delay: 0.1 + index * 0.08,
+          ease: 'back.out(1.5)',
           scrollTrigger: {
             trigger: el,
             start: 'top 90%',
@@ -60,18 +49,33 @@ const About = () => {
 
       const threeDElements = elementRef.current?.querySelectorAll('[class*="h-[600px]"], [class*="h-[700px]"], [class*="h-[800px]"], [class*="h-[900px]"], [class*="h-[1000px]"], [class*="h-[1100px]"]') || []
       threeDElements.forEach((el, index) => {
-        gsap.set(el, { opacity: 0, scale: 0.95 })
+        gsap.set(el, { opacity: 0, scale: 0.85, rotationY: -20 })
         gsap.to(el, {
           opacity: 1,
           scale: 1,
-          duration: 0.5,
+          rotationY: 0,
+          duration: 0.8,
           delay: 0.15 + index * 0.08,
-          ease: 'power2.out',
+          ease: 'elastic.out(1, 0.6)',
           scrollTrigger: {
             trigger: el,
             start: 'top 90%',
             toggleActions: 'play none none none',
             once: true,
+          },
+        })
+
+        // Efeito parallax 3D no scroll
+        gsap.to(el, {
+          y: -50,
+          rotationY: 5,
+          duration: 1,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: 1.5,
           },
         })
       })
@@ -124,18 +128,18 @@ const About = () => {
     <section
       id="about"
       ref={elementRef}
-      className="relative min-h-screen py-20 px-4 sm:px-6 lg:px-8 overflow-visible"
+      className="relative min-h-screen py-20 px-4 sm:px-6 lg:px-8 overflow-hidden"
     >
       <div className="max-w-7xl mx-auto relative">
-        <div className="grid md:grid-cols-2 gap-12 items-start">
-          <div ref={contentRef} className="space-y-8 relative z-10">
+        <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-start">
+          <div ref={contentRef} className="space-y-8 relative z-10 md:pr-4">
             <div className="animate-on-scroll">
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
                 Sobre <span className="text-primary-400">Mim</span>
               </h2>
             </div>
 
-            <div className="animate-on-scroll space-y-4 text-gray-300 text-lg">
+            <div className="animate-on-scroll space-y-4 text-gray-300 text-base sm:text-lg">
               <p>
                 Engenheiro de Software formado pela Fatesg (conclusão em 
                 2025) com sólida trajetória de 3 anos e 8 meses na Escolar 
@@ -153,7 +157,7 @@ const About = () => {
 
             {/* Foto de Perfil */}
             <div className="animate-on-scroll">
-              <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-primary-500/30 shadow-lg shadow-primary-500/20">
+              <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-primary-500/30 shadow-lg shadow-primary-500/20 mx-auto md:mx-0">
                 <img
                   src="/images/face.png"
                   alt="Pedro - Desenvolvedor"
@@ -181,12 +185,13 @@ const About = () => {
           </div>
 
           {/* Objeto 3D Decorativo */}
-          <div className="relative h-[700px] md:h-[900px] lg:h-[1000px] xl:h-[1100px] animate-on-scroll overflow-visible -mb-20 md:-mb-32 lg:-mb-40" style={{ zIndex: 1 }}>
-            <div className="absolute inset-0 w-full h-full pointer-events-auto">
+          <div className="relative h-[600px] md:h-[800px] lg:h-[900px] xl:h-[1000px] animate-on-scroll overflow-hidden md:overflow-visible">
+            <div className="absolute inset-0 w-full h-full pointer-events-auto" style={{ zIndex: 1 }}>
               <Suspense fallback={<div className="w-full h-full bg-gray-900 rounded-lg flex items-center justify-center">Carregando 3D...</div>}>
                 <Scene3D
-                  cameraPosition={[0, 0.3, 7]}
+                  cameraPosition={[0, 0.3, 8.5]}
                   enableControls={true}
+                  enableZoom={false}
                   className="w-full h-full"
                 >
                   <About3D />

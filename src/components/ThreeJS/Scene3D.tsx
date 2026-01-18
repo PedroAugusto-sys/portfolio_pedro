@@ -8,6 +8,7 @@ interface Scene3DProps {
   children: React.ReactNode
   cameraPosition?: [number, number, number]
   enableControls?: boolean
+  enableZoom?: boolean
   className?: string
 }
 
@@ -42,6 +43,7 @@ const WebGLContextManager = () => {
 const SceneContent = ({
   children,
   enableControls = true,
+  enableZoom = true,
   cameraPosition = [0, 0, 5],
 }: Omit<Scene3DProps, 'className'>) => {
   useThreeScene()
@@ -50,12 +52,12 @@ const SceneContent = ({
   return (
     <>
       <WebGLContextManager />
-      <PerspectiveCamera makeDefault position={cameraPosition} />
+      <PerspectiveCamera makeDefault position={cameraPosition} fov={80} />
       <ambientLight intensity={0.8} />
       <pointLight position={[10, 10, 10]} intensity={1.0} />
       {enableControls && (
         <OrbitControls
-          enableZoom={!isMobile}
+          enableZoom={enableZoom && !isMobile}
           enablePan={false}
           minDistance={3}
           maxDistance={10}
@@ -73,6 +75,7 @@ const Scene3D = ({
   children,
   cameraPosition = [0, 0, 5],
   enableControls = true,
+  enableZoom = true,
   className = '',
 }: Scene3DProps) => {
   const isMobile = useMobile()
@@ -100,17 +103,20 @@ const Scene3D = ({
           precision: 'highp',
           premultipliedAlpha: false,
         }}
-        dpr={isMobile ? [1, 1.5] : [1, 2]}
+        dpr={isMobile ? [0.8, 1.2] : [1, 2]}
         camera={{ position: cameraPosition }}
-        performance={{ min: 0.5, max: 1, debounce: 200 }}
+        performance={{ min: isMobile ? 0.3 : 0.5, max: 1, debounce: isMobile ? 300 : 200 }}
         style={{ 
+          display: 'block',
           background: 'transparent', 
           touchAction: enableControls && isMobile ? 'none' : (isMobile ? 'pan-y' : 'auto'),
           position: 'absolute',
           top: 0,
           left: 0,
           width: '100%',
-          height: '100%'
+          height: '100%',
+          pointerEvents: enableControls && isMobile ? 'auto' : 'auto',
+          zIndex: 1
         }}
         frameloop="always"
         onCreated={({ gl, scene }) => {
@@ -132,6 +138,7 @@ const Scene3D = ({
         <Suspense fallback={null}>
           <SceneContent 
             enableControls={enableControls}
+            enableZoom={enableZoom}
             cameraPosition={cameraPosition}
           >
             {children}
