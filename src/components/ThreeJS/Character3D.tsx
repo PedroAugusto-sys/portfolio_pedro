@@ -10,6 +10,15 @@ interface Character3DProps {
   scrollProgress?: number
 }
 
+interface Particle {
+  position: THREE.Vector3
+  velocity: THREE.Vector3
+  life: number
+  maxLife: number
+  size: number
+  color: THREE.Color
+}
+
 // Cores para os diferentes estados
 const COLORS = {
   idle: new THREE.Color(0x00ffff),      // Ciano - estado parado
@@ -36,7 +45,7 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
   const targetGlowColorRef = useRef(new THREE.Color(0x00ffff))
   const glowIntensityRef = useRef(0.5)
   
-  // Refs para mouse tracking (olhar interativo)
+  // Refs para mouse/touch tracking (olhar interativo)
   const mouseRef = useRef({ x: 0, y: 0 })
   const headBoneRef = useRef<THREE.Bone | null>(null)
   const neckBoneRef = useRef<THREE.Bone | null>(null)
@@ -44,6 +53,12 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
   // Refs para animação de scroll reverso
   const reverseAnimationRef = useRef(0)
   const spinVelocityRef = useRef(0)
+  
+  // Refs para sistema de partículas
+  const particlesRef = useRef<Particle[]>([])
+  const particlesGeometryRef = useRef<THREE.BufferGeometry | null>(null)
+  const particlesMaterialRef = useRef<THREE.PointsMaterial | null>(null)
+  const particlesSystemRef = useRef<THREE.Points | null>(null)
 
   // Clonar e preparar o personagem
   const character = useMemo(() => {
@@ -123,39 +138,99 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
     }
   }, [character])
 
-  // Escala base
-  const BASE_SCALE = isMobile ? 0.9 : 1.1
+  // Escala base - AUMENTADA EM 30%
+  const BASE_SCALE = isMobile ? 1.17 : 1.43 // Era 0.9 e 1.1, agora +30%
 
-  // Rastreamento do mouse (desktop only)
+  // Rastreamento do mouse/touch (funciona em mobile também)
   useEffect(() => {
-    if (isMobile) return
-    
-    const handleMouseMove = (event: MouseEvent) => {
-      mouseRef.current.x = (event.clientX / window.innerWidth) * 2 - 1
-      mouseRef.current.y = -(event.clientY / window.innerHeight) * 2 + 1
+    const handleMove = (event: MouseEvent | TouchEvent) => {
+      let clientX = 0
+      let clientY = 0
+      
+      if ('touches' in event && event.touches.length > 0) {
+        // Touch event
+        clientX = event.touches[0].clientX
+        clientY = event.touches[0].clientY
+      } else if ('clientX' in event) {
+        // Mouse event
+        clientX = event.clientX
+        clientY = event.clientY
+      }
+      
+      mouseRef.current.x = (clientX / window.innerWidth) * 2 - 1
+      mouseRef.current.y = -(clientY / window.innerHeight) * 2 + 1
     }
 
-    window.addEventListener('mousemove', handleMouseMove, { passive: true })
-    return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [isMobile])
+    window.addEventListener('mousemove', handleMove, { passive: true })
+    window.addEventListener('touchmove', handleMove, { passive: true })
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('touchmove', handleMove)
+    }
+  }, [])
+
+  // Inicializar sistema de partículas
+  useEffect(() => {
+    const geometry = new THREE.BufferGeometry()
+    const maxParticles = 300
+    const positions = new Float32Array(maxParticles * 3)
+    const colors = new Float32Array(maxParticles * 3)
+    positions.fill(0)
+    colors.fill(1)
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+    
+    particlesGeometryRef.current = geometry
+
+    const material = new THREE.PointsMaterial({
+      size: 0.15,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      sizeAttenuation: true,
+      vertexColors: true,
+    })
+    
+    particlesMaterialRef.current = material
+
+    const particles = new THREE.Points(geometry, material)
+    particles.frustumCulled = false
+    particlesSystemRef.current = particles
+
+    return () => {
+      geometry.dispose()
+      material.dispose()
+    }
+  }, [])
 
   // Frame loop principal
   useFrame((state, delta) => {
     if (!groupRef.current || !innerGroupRef.current) return
 
-    // Calcular scroll progress diretamente do DOM para garantir precisão
+    // Calcular scroll progress - CORRIGIDO para funcionar corretamente
     let currentScroll = scrollProgress
+    
+    // Usar o valor do prop primeiro, mas também calcular do DOM como fallback
     const heroElement = document.getElementById('hero')
     if (heroElement) {
       const rect = heroElement.getBoundingClientRect()
       const sectionHeight = heroElement.offsetHeight || window.innerHeight
+      const viewportHeight = window.innerHeight
       
-      if (rect.bottom < 0) {
+      // Quando o topo da seção está no topo da viewport: scroll = 0
+      // Quando o bottom da seção está no topo da viewport: scroll = 1
+      if (rect.bottom <= 0) {
+        // Seção já passou completamente
         currentScroll = 1
-      } else if (rect.top > 0) {
+      } else if (rect.top >= viewportHeight) {
+        // Seção ainda não entrou na viewport
         currentScroll = 0
       } else {
-        const scrolled = Math.abs(rect.top)
+        // Seção está visível - calcular progresso
+        // rect.top é negativo quando scrollou para baixo
+        const scrolled = Math.max(0, -rect.top)
         currentScroll = Math.max(0, Math.min(1, scrolled / sectionHeight))
       }
     }
@@ -177,8 +252,8 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
     
     previousScrollRef.current = currentScroll
 
-    // Suavizar transição do scroll
-    scrollRef.current = THREE.MathUtils.lerp(scrollRef.current, currentScroll, 0.15)
+    // Suavizar transição do scroll - mais rápido para resposta imediata
+    scrollRef.current = THREE.MathUtils.lerp(scrollRef.current, currentScroll, 0.25)
     const scroll = scrollRef.current
     
     // ========================================
@@ -202,6 +277,10 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
       innerGroupRef.current.rotation.set(0, 0, 0)
       groupRef.current.rotation.set(0, 0, 0)
       initializedRef.current = true
+      
+      if (particlesSystemRef.current) {
+        groupRef.current.add(particlesSystemRef.current)
+      }
     }
 
     // ========================================
@@ -226,9 +305,9 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
     currentGlowColorRef.current.lerp(targetGlowColorRef.current, 0.08)
 
     // ========================================
-    // OLHAR INTERATIVO (CABEÇA SEGUE O MOUSE)
+    // OLHAR INTERATIVO (CABEÇA SEGUE O MOUSE/TOUCH) - FUNCIONA NO MOBILE TAMBÉM
     // ========================================
-    if (!isMobile && headBoneRef.current) {
+    if (headBoneRef.current) {
       // Atualizar skeleton
       character.traverse((child) => {
         if (child instanceof THREE.SkinnedMesh && child.skeleton) {
@@ -236,10 +315,9 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
         }
       })
       
-      // Calcular rotação alvo baseada na posição do mouse
-      // Quanto mais o mouse está para a direita, mais a cabeça vira para a direita
-      const targetHeadRotY = mouseRef.current.x * 0.6 // Rotação horizontal (esquerda/direita)
-      const targetHeadRotX = -mouseRef.current.y * 0.4 // Rotação vertical (cima/baixo)
+      // Calcular rotação alvo baseada na posição do mouse/touch
+      const targetHeadRotY = mouseRef.current.x * 0.6
+      const targetHeadRotX = -mouseRef.current.y * 0.4
       
       // Aplicar rotação suavizada no osso da cabeça
       headBoneRef.current.rotation.y = THREE.MathUtils.lerp(
@@ -257,7 +335,7 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
       if (neckBoneRef.current && neckBoneRef.current !== headBoneRef.current) {
         neckBoneRef.current.rotation.y = THREE.MathUtils.lerp(
           neckBoneRef.current.rotation.y,
-          targetHeadRotY * 0.3, // Pescoço gira menos que a cabeça
+          targetHeadRotY * 0.3,
           0.05
         )
         neckBoneRef.current.rotation.x = THREE.MathUtils.lerp(
@@ -278,7 +356,7 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
     // ANIMAÇÕES BASEADAS NO SCROLL
     // ========================================
 
-    // 1. QUEDA/SUBIDA VERTICAL
+    // 1. QUEDA/SUBIDA VERTICAL - CORRIGIDO para funcionar
     const fallStartY = centerOffset.y + 2
     const fallEndY = centerOffset.y - (isMobile ? 4 : 6)
     const fallDistance = fallStartY - fallEndY
@@ -299,7 +377,7 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
     const depthDirection = isScrollingUp ? 1 : -1
     const targetZ = centerOffset.z + (scroll * 1.0 * depthDirection)
 
-    // Aplicar posições
+    // Aplicar posições - Y DIRETO para resposta imediata
     innerGroupRef.current.position.y = targetY
     innerGroupRef.current.position.x = THREE.MathUtils.lerp(
       innerGroupRef.current.position.x,
@@ -371,6 +449,103 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
       
       const heroicPose = reverseAmount * 0.1
       innerGroupRef.current.scale.x = newScale * (1 + heroicPose)
+    }
+
+    // ========================================
+    // SISTEMA DE PARTÍCULAS COM CORES
+    // ========================================
+    if (particlesSystemRef.current && particlesGeometryRef.current) {
+      const shouldEmit = (scroll > 0.05 && speed > 0.5) || speed > 2
+      
+      if (shouldEmit) {
+        const emitCount = Math.min(Math.floor(speed * 3) + 1, 10)
+        
+        for (let i = 0; i < emitCount; i++) {
+          if (particlesRef.current.length < 300) {
+            const charPos = innerGroupRef.current.position.clone()
+            
+            const velY = isScrollingUp ? -0.3 - Math.random() * 0.2 : 0.2 + Math.random() * 0.3
+            
+            const particle: Particle = {
+              position: new THREE.Vector3(
+                charPos.x + (Math.random() - 0.5) * 1.0,
+                charPos.y + (Math.random() - 0.5) * 0.8,
+                charPos.z + (Math.random() - 0.5) * 1.0
+              ),
+              velocity: new THREE.Vector3(
+                (Math.random() - 0.5) * 0.6,
+                velY,
+                (Math.random() - 0.5) * 0.6
+              ),
+              life: 1.5,
+              maxLife: 1.5 + Math.random() * 0.5,
+              size: 0.1 + Math.random() * 0.15,
+              color: currentGlowColorRef.current.clone()
+            }
+            particlesRef.current.push(particle)
+          }
+        }
+      }
+
+      // Atualizar partículas existentes
+      const activeParticles: Particle[] = []
+      
+      for (let i = particlesRef.current.length - 1; i >= 0; i--) {
+        const p = particlesRef.current[i]
+        p.life -= delta
+        
+        if (p.life <= 0) {
+          particlesRef.current.splice(i, 1)
+          continue
+        }
+
+        p.position.add(p.velocity.clone().multiplyScalar(delta))
+        
+        const gravityDirection = isScrollingUp ? 0.2 : -0.3
+        p.velocity.y += delta * gravityDirection
+        p.velocity.multiplyScalar(0.98)
+        
+        activeParticles.push(p)
+      }
+
+      // Atualizar geometria com posições e cores
+      if (activeParticles.length > 0) {
+        const positions = new Float32Array(activeParticles.length * 3)
+        const colors = new Float32Array(activeParticles.length * 3)
+        
+        for (let i = 0; i < activeParticles.length; i++) {
+          const p = activeParticles[i]
+          const lifeRatio = p.life / p.maxLife
+          
+          positions[i * 3] = p.position.x
+          positions[i * 3 + 1] = p.position.y
+          positions[i * 3 + 2] = p.position.z
+          
+          colors[i * 3] = p.color.r * lifeRatio
+          colors[i * 3 + 1] = p.color.g * lifeRatio
+          colors[i * 3 + 2] = p.color.b * lifeRatio
+        }
+        
+        particlesGeometryRef.current.setAttribute(
+          'position',
+          new THREE.BufferAttribute(positions, 3)
+        )
+        particlesGeometryRef.current.setAttribute(
+          'color',
+          new THREE.BufferAttribute(colors, 3)
+        )
+        particlesGeometryRef.current.setDrawRange(0, activeParticles.length)
+        particlesGeometryRef.current.attributes.position.needsUpdate = true
+        particlesGeometryRef.current.attributes.color.needsUpdate = true
+        
+        if (particlesMaterialRef.current) {
+          particlesMaterialRef.current.opacity = 0.8
+        }
+        
+        particlesSystemRef.current.visible = true
+      } else {
+        particlesSystemRef.current.visible = false
+      }
     }
   })
 

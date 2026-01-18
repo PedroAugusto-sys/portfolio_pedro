@@ -18,7 +18,8 @@ const About3D = () => {
   const { scene: cerebroScene } = useGLTF('/models/about/cerebro.glb')
 
   const BASE_SCALE = 0.8
-  const TARGET_BASE_SCALE = isMobile ? BASE_SCALE * 5.5 : BASE_SCALE * 7.2
+  // AUMENTADO EM 30%: era 5.5 e 7.2, agora 7.15 e 9.36
+  const TARGET_BASE_SCALE = isMobile ? BASE_SCALE * 7.15 : BASE_SCALE * 9.36
 
   useFrame((state) => {
     if (groupRef.current && innerGroupRef.current) {
