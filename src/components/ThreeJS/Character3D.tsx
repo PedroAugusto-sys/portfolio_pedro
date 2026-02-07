@@ -19,13 +19,8 @@ interface Particle {
   color: THREE.Color
 }
 
-// Cores para os diferentes estados
-const COLORS = {
-  idle: new THREE.Color(0x00ffff),      // Ciano - estado parado
-  falling: new THREE.Color(0xff6600),   // Laranja - caindo (scroll para baixo)
-  rising: new THREE.Color(0x00ff88),    // Verde - subindo (scroll para cima)
-  fast: new THREE.Color(0xff0066),      // Rosa/Magenta - movimento rápido
-}
+// Cor fixa do personagem (sem mudança durante scroll)
+const GLOW_COLOR = new THREE.Color(0x00ffff) // Ciano
 
 const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
   const groupRef = useRef<THREE.Group>(null)
@@ -40,9 +35,7 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
   const scrollDirectionRef = useRef<'down' | 'up' | 'idle'>('idle')
   const initializedRef = useRef(false)
   
-  // Refs para efeito de glow
-  const currentGlowColorRef = useRef(new THREE.Color(0x00ffff))
-  const targetGlowColorRef = useRef(new THREE.Color(0x00ffff))
+  // Refs para efeito de glow (cor fixa, sem mudança no scroll)
   const glowIntensityRef = useRef(0.5)
   
   // Refs para mouse/touch tracking (olhar interativo)
@@ -279,26 +272,8 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
       }
     }
 
-    // ========================================
-    // MUDANÇA DE COR / GLOW
-    // ========================================
-    const speed = scrollVelocityRef.current
-    
-    if (speed < 0.5) {
-      targetGlowColorRef.current.copy(COLORS.idle)
-      glowIntensityRef.current = THREE.MathUtils.lerp(glowIntensityRef.current, 0.5, 0.1)
-    } else if (speed > 3) {
-      targetGlowColorRef.current.copy(COLORS.fast)
-      glowIntensityRef.current = THREE.MathUtils.lerp(glowIntensityRef.current, 2.5, 0.1)
-    } else if (isScrollingUp) {
-      targetGlowColorRef.current.copy(COLORS.rising)
-      glowIntensityRef.current = THREE.MathUtils.lerp(glowIntensityRef.current, 1.5 + speed * 0.3, 0.1)
-    } else if (isScrollingDown) {
-      targetGlowColorRef.current.copy(COLORS.falling)
-      glowIntensityRef.current = THREE.MathUtils.lerp(glowIntensityRef.current, 1.0 + speed * 0.3, 0.1)
-    }
-    
-    currentGlowColorRef.current.lerp(targetGlowColorRef.current, 0.08)
+    // Glow mantém intensidade constante (sem mudança de cor no scroll)
+    glowIntensityRef.current = THREE.MathUtils.lerp(glowIntensityRef.current, 0.5, 0.1)
 
     // ========================================
     // OLHAR INTERATIVO (CABEÇA SEGUE O MOUSE/TOUCH) - FUNCIONA NO MOBILE TAMBÉM
@@ -464,7 +439,7 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
               life: 1.5,
               maxLife: 1.5 + Math.random() * 0.5,
               size: 0.1 + Math.random() * 0.15,
-              color: currentGlowColorRef.current.clone()
+              color: GLOW_COLOR.clone()
             }
             particlesRef.current.push(particle)
           }
@@ -539,9 +514,9 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
 
   return (
     <group ref={groupRef} onClick={handleClick}>
-      {/* Luz de glow que segue o personagem */}
+      {/* Luz de glow que segue o personagem (cor fixa) */}
       <pointLight
-        color={currentGlowColorRef.current}
+        color={GLOW_COLOR}
         intensity={glowIntensityRef.current}
         distance={8}
         decay={2}
