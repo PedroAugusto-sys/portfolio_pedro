@@ -273,6 +273,7 @@ const Character3D = ({ scrollProgress = 0 }: Character3DProps) => {
     }
 
     // Glow mantém intensidade constante (sem mudança de cor no scroll)
+    const speed = scrollVelocityRef.current
     glowIntensityRef.current = THREE.MathUtils.lerp(glowIntensityRef.current, 0.5, 0.1)
 
     // ========================================
